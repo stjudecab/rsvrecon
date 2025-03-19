@@ -1,0 +1,40 @@
+bump_version: null
+lint:
+  files_exist:
+  - CODE_OF_CONDUCT.md
+  - assets/nf-core-rsvrecon_logo_light.png
+  - docs/images/nf-core-rsvrecon_logo_light.png
+  - docs/images/nf-core-rsvrecon_logo_dark.png
+  - .github/ISSUE_TEMPLATE/config.yml
+  - .github/workflows/awstest.yml
+  - .github/workflows/awsfulltest.yml
+  files_unchanged:
+  - CODE_OF_CONDUCT.md
+  - assets/nf-core-rsvrecon_logo_light.png
+  - docs/images/nf-core-rsvrecon_logo_light.png
+  - docs/images/nf-core-rsvrecon_logo_dark.png
+  - .github/ISSUE_TEMPLATE/bug_report.yml
+  multiqc_config:
+  - report_comment
+  nextflow_config:
+  - manifest.name
+  - manifest.homePage
+  - validation.help.beforeText
+  - validation.help.afterText
+  - validation.summary.beforeText
+  - validation.summary.afterText
+nf_core_version: 3.0.2
+org_path: null
+repository_type: pipeline
+template:
+  author: Haidong Yi and Lei Li
+  description: A pipeline for assembling genomic sequences of respiratory syncytial
+    virus (RSV) from NGS data
+  force: true
+  is_nfcore: false
+  name: rsvrecon
+  org: stjudecab
+  outdir: rsvrecon
+  skip_features: null
+  version: '0.1'
+update: null
