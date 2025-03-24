@@ -41,7 +41,8 @@
                     "description": "MultiQC report title. Printed as page header, used for filename if not otherwise specified.",
                     "fa_icon": "fas fa-file-signature"
                 }
-            }
+            },
+            "required": ["input", "outdir"]
         },
         "reference_genome_options": {
             "title": "Reference genome options",
@@ -81,6 +82,51 @@
                     "default": "s3://ngi-igenomes/igenomes/"
                 }
             }
+        },
+        "read_trimming_and_filtering_options": {
+            "title": "Illumina QC, read trimming and filtering options",
+            "type": "object",
+            "description": "Options to read trimming and host read filtering",
+            "default": "",
+            "properties": {
+                "save_trimmed_fail": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-save",
+                    "description": "Save the trimmed FastQ files in the results directory.",
+                    "help_text": "By default, trimmed FastQ files will not be saved to the results directory. Specify this flag (or set to true in your config file) to copy these files to the results directory when complete."
+                },
+                "skip_fastp": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-fast-forward",
+                    "description": "Skip the initial read trimming step peformed by fastp."
+                }
+            },
+            "fa_icon": "fas fa-cut"
+        },
+        "process_skipping_options": {
+            "title": "Process skipping options",
+            "type": "object",
+            "description": "Options to skip various steps within the workflow.",
+            "default": "",
+            "help_text": "",
+            "properties": {
+                "skip_qc": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Skip all QC."
+                },
+                "skip_fastqc": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Skip FastQC."
+                },
+                "skip_multiqc": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Skip MultiQC."
+                }
+            },
+            "fa_icon": "fas fa-forward"
         },
         "institutional_config_options": {
             "title": "Institutional config options",
@@ -228,6 +274,12 @@
         },
         {
             "$ref": "#/$defs/reference_genome_options"
+        },
+        {
+            "$ref": "#/$defs/read_trimming_and_filtering_options"
+        },
+        {
+            "$ref": "#/$defs/process_skipping_options"
         },
         {
             "$ref": "#/$defs/institutional_config_options"
