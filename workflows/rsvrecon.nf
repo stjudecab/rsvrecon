@@ -4,6 +4,15 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /*
 
+// Check input path parameters
+def checkPathParamList = [
+    params.fasta, params.kma_index
+]
+
+for (param in checkPathParamList) {
+    if (param) { file(param, checkIfExists: true) }
+}
+
 
 
 /*
