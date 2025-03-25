@@ -8,25 +8,24 @@ process KMA_MAP {
         'biocontainers/kma:1.4.15--h577a1d6_1' }"
 
     input:
-    tuple val(meta),  path(reads)
-    tuple val(meta2), path(index)
+    tuple val(meta), path(reads)
+    path index
 
     output:
-    tuple val(meta), path("${prefix}.res"),      emit: res      // Results overview
-    tuple val(meta), path("${prefix}.fsa"),      emit: fsa      // Consensus sequences
-    tuple val(meta), path("${prefix}.aln"),      emit: aln      // Consensus alignments
-    tuple val(meta), path("${prefix}.frag.gz"),  emit: frag     // Read mapping information
-    tuple val(meta), path("${prefix}.mat.gz"),   optional:true, emit: matrix   // Base counts (only if -matrix is enabled)
-    tuple val(meta), path("${prefix}.log"),      emit: log      // Log file
+    tuple val(meta), path("*.res"),      emit: res      // Results overview
+    tuple val(meta), path("*.fsa"),      emit: fsa      // Consensus sequences
+    tuple val(meta), path("*.aln"),      emit: aln      // Consensus alignments
+    tuple val(meta), path("*.frag.gz"),  emit: frag     // Read mapping information
+    tuple val(meta), path("*.mat.gz"),   optional:true, emit: matrix   // Base counts (only if -matrix is enabled)
+    tuple val(meta), path("*.log"),      emit: log      // Log file
     path "versions.yml",                         emit: versions
 
     when:
     task.ext.when == null || task.ext.when
 
     script:
-    def prefix     = task.ext.prefix ?: "${meta.id}"
-    def args       = task.ext.args ?: ''
-    def index_name = meta2.id ?: "index"  // if index has no id, then use 'index' as default. So, ensure meta2 contains the name of index
+    def args   = task.ext.args ?: ''
+    prefix     = task.ext.prefix ?: "$meta.id"
 
     // Handle different read formats
     def read_command = ""
@@ -42,9 +41,29 @@ process KMA_MAP {
     }
 
     """
+    # Determine index base name by looking for required index files
+    INDEX_BASE=""
+    INDEX_FILES=\$(ls ${index}/*.seq.b 2>/dev/null || ls ${index}/*/*.seq.b 2>/dev/null || echo "")
+
+    if [ -n "\$INDEX_FILES" ]; then
+        # Extract the base name from the first matching index file
+        INDEX_FILE=\$(echo "\$INDEX_FILES" | head -n 1)
+        INDEX_BASE=\${INDEX_FILE%.seq.b}
+        echo "Using index base: \$INDEX_BASE"
+    else
+        # If no *.seq.b files found, try to check if the index itself is the base name
+        if [ -f "${index}.seq.b" ]; then
+            INDEX_BASE="${index}"
+            echo "Using index base: \$INDEX_BASE"
+        else
+            echo "Error: Could not find proper KMA index files" >&2
+            exit 1
+        fi
+    fi
+
     kma ${read_command} \\
         -o ${prefix} \\
-        -t_db ${index}/${index_name} \\
+        -t_db \$INDEX_BASE \\
         $args \\
         2> ${prefix}.log
 
@@ -55,7 +74,7 @@ process KMA_MAP {
     """
 
     stub:
-    def prefix  = task.ext.prefix ?: "${fasta.baseName}"
+    def prefix  = task.ext.prefix ?: "${meta.id}"
     """
     touch ${prefix}.res
     touch ${prefix}.fsa
