@@ -37,10 +37,11 @@ def fail_mapped_reads = [:]
 workflow FASTQ_TRIM_FASTP_FASTQC {
 
     take:
-    reads             // channel: [ val(meta), [reads] ]
-    adapter_fasta     // file: adapter.fasta
-    save_trimmed_fail // value: boolean
-    save_merged       // value: boolean
+    reads                // channel: [ val(meta), [reads] ]
+    adapter_fasta        // file: adapter.fasta
+    discard_trimmed_pass // value: boolean
+    save_trimmed_fail    // value: boolean
+    save_merged          // value: boolean
 
     main:
 
@@ -81,6 +82,7 @@ workflow FASTQ_TRIM_FASTP_FASTQC {
         FASTP (
             reads,
             adapter_fasta,
+            discard_trimmed_pass,
             save_trimmed_fail,
             save_merged)
 
@@ -160,5 +162,5 @@ workflow FASTQ_TRIM_FASTP_FASTQC {
     fastqc_multiqc_pretrim
     fastqc_multiqc_postrim
 
-    versions = ch_versions.ifEmpty(null) // channel: [ versions.yml ]
+    versions = ch_versions // channel: [ versions.yml ]
 }
