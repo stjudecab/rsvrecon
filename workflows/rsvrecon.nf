@@ -36,6 +36,7 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 //
 // MODULE: Loaded from modules/local/
 //
+include { KMA_MAP                    } from '../modules/local/kma_map'
 
 //
 // SUBWORKFLOW: Consisting a mix of local and nf-core/modules
@@ -131,6 +132,12 @@ workflow RSVRECON {
     kma_index = PREPARE_REFERENCE_FILES.out.kma_index
 
     ch_versions = ch_versions.mix( PREPARE_REFERENCE_FILES.out.versions )
+
+    //
+    // MODULE: Alignment with KMA for identifying best
+    //
+    KMA_MAP ( ch_trimmed_fastq, kma_index.map{ it[1] } )
+    ch_versions = ch_versions.mix(KMA_MAP.out.versions.first())
 
     //
     // Collate and save software versions
