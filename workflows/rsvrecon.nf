@@ -42,6 +42,7 @@ include { KMA_MAP                    } from '../modules/local/kma_map'
 // SUBWORKFLOW: Consisting a mix of local and nf-core/modules
 //
 include { FASTQ_TRIM_FASTP_FASTQC    } from '../subworkflows/local/fastq_trim_fastp_fastqc'
+include { PREPARE_REFERENCE_FILES    } from '../subworkflows/local/prepare_reference_files'
 
 
 //
@@ -126,7 +127,7 @@ workflow RSVRECON {
     //
     // SUBWORKFLOW: Prepare reference genomes
     //
-    PREPARE_REFERENCE_FILES ( param.fasta )
+    PREPARE_REFERENCE_FILES ( params.fasta )
 
     fasta = PREPARE_REFERENCE_FILES.out.fasta
     kma_index = PREPARE_REFERENCE_FILES.out.kma_index
