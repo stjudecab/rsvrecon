@@ -8,7 +8,6 @@ include { CUSTOM_GETCHROMSIZES          } from '../../modules/nf-core/custom/get
 include { KMA_INDEX                     } from '../../modules/nf-core/kma/index/main'
 
 
-
 workflow PREPARE_REFERENCE_FILES {
 
     take:
@@ -32,8 +31,7 @@ workflow PREPARE_REFERENCE_FILES {
         ch_versions = ch_versions.mix(GUNZIP_FASTA.out.versions)
     } else {
         ch_fasta = Channel.value(file(params.fasta)).map {
-            meta, fasta ->
-                [ [id:fasta.Name], fasta ]
+            it -> [ [id:it.Name], it ]
         }
     }
 
@@ -52,12 +50,13 @@ workflow PREPARE_REFERENCE_FILES {
     if (params.kma_index) {
         if (params.kma_index.endsWith('.tar.gz')) {
             UNTAR_KMA_INDEX (
-                [ [:], params.kma_db ]
+                [ [:], file(params.kma_index, type: 'file') ]
             )
             ch_kma_index = UNTAR_KMA_INDEX.out.untar
             ch_versions  = ch_versions.mix(UNTAR_KMA_INDEX.out.versions)
         } else {
-            ch_kma_index = Channel.value(file(params.kma_index, type: 'dir', checkIfExists: true))
+            ch_kma_index = Channel.value( file(params.kma_index, type: 'dir') )
+                .map { it -> [ [id:it.Name], it ] }
         }
     } else {
         KMA_INDEX ( ch_fasta )
