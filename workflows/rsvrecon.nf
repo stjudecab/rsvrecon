@@ -114,6 +114,16 @@ workflow RSVRECON {
     ch_fail_reads_multiqc     = FASTQ_TRIM_FASTP_FASTQC.out.fail_reads_multiqc
 
     //
+    // SUBWORKFLOW: Prepare reference genomes
+    //
+    PREPARE_REFERENCE_FILES ( param.fasta )
+
+    fasta = PREPARE_REFERENCE_FILES.out.fasta
+    kma_index = PREPARE_REFERENCE_FILES.out.kma_index
+
+    ch_versions = ch_versions.mix( PREPARE_REFERENCE_FILES.out.versions )
+
+    //
     // Collate and save software versions
     //
     softwareVersionsToYAML(ch_versions)
