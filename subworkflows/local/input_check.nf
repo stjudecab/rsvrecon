@@ -12,13 +12,10 @@ workflow INPUT_CHECK {
     main:
 
     // Check the sample sheet
-    SAMPLESHEET_CHECK ( samplesheet )
-
-    SAMPLESHEET_CHECK
-        .out
+    SAMPLESHEET_CHECK ( file(samplesheet, type: 'file', checkIfExists: true ) )
         .csv
-        .splitCsv( header:true, sep:',' )
-        .map { create_fastq_channel }
+        .splitCsv ( header:true, sep:',' )
+        .map { create_fastq_channel(it) }
         .set { sample_info }
 
     emit:

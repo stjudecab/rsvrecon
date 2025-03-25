@@ -83,13 +83,12 @@ workflow PIPELINE_INITIALISATION {
     // 2. Create channel through the checked samplesheet
     //
     INPUT_CHECK ( params.input )
-        .out
         .sample_info
-        .set { ch_samplesheet }
+        .set { samplesheet }
 
     emit:
-    samplesheet    = ch_samplesheet
-    versions       = INPUT_CHECK.out.versions
+    samplesheet
+    versions = INPUT_CHECK.out.versions
 }
 
 /*
