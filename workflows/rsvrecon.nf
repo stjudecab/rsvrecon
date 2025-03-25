@@ -18,24 +18,37 @@ ch_multiqc_logo                       = params.multiqc_logo   ? Channel.fromPath
 ch_multiqc_custom_methods_description = params.multiqc_methods_description ? file(params.multiqc_methods_description, checkIfExists: true) : file("$projectDir/assets/methods_description_template.yml", checkIfExists: true)
 
 
+/*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT MODULES / SUBWORKFLOWS / FUNCTIONS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
+
+//
+// MODULE: Loaded from modules/local/
+//
+
+//
+// SUBWORKFLOW: Consisting a mix of local and nf-core/modules
+//
+include { FASTQ_TRIM_FASTP_FASTQC    } from '../subworkflows/local/fastq_trim_fastp_fastqc'
+
+
+//
+// MODULE: Installed directly from nf-core/modules (possibly with some patches)
+//
+include { CAT_FASTQ                  } from '../modules/nf-core/cat/fastq/main'
+include { MULTIQC as MULTIQC_RAWQC   } from '../modules/nf-core/multiqc/main'
+include { MULTIQC as MULTIQC_FINALQC } from '../modules/nf-core/multiqc/main'
+
+//
+// SUBWORKFLOW: Consisting entirely of nf-core/modules
+//
+
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_rsvrecon_pipeline'
-
-
-include { CAT_FASTQ                } from '../modules/nf-core/cat/fastq/main'
-include { FASTQC                   } from '../modules/nf-core/fastqc/main'
-include { MULTIQC as MULTIQC_RAWQC   } from '../modules/nf-core/multiqc/main'
-include { MULTIQC as MULTIQC_FINALQC } from '../modules/nf-core/multiqc/main'
-
-include { FASTQ_TRIM_FASTP_FASTQC } from '../subworkflows/local/fastq_trim_fastp_fastqc'
-
-
 
 
 /*
@@ -53,7 +66,7 @@ workflow RSVRECON {
 
     // init version and multiqc channel
     ch_versions = Channel.empty()
-    ch_multiqc_files = Channel.empty()
+    ch_multiqc_report = Channel.empty()
 
     // group multiple fastq files from the same sample
     ch_samplesheet
@@ -75,11 +88,11 @@ workflow RSVRECON {
     //
     // MODULE: Concatenate FastQ files from the same sample if required
     //
-    CAT_FASTQ ( ch_fastq )
+    CAT_FASTQ ( ch_fastq.multiple )
         .reads
         .mix ( ch_fastq.single )
         .set { ch_cat_fastq }
-    ch_versions = ch_versions.mix(CAT_FASTQ.out.versions.first().ifEmpty(null))
+    ch_versions = ch_versions.mix(CAT_FASTQ.out.versions.first())
 
     //
     // SUBWORKFLOW: Read QC and trim adapters
@@ -87,6 +100,7 @@ workflow RSVRECON {
     FASTQ_TRIM_FASTP_FASTQC (
         ch_cat_fastq,
         [],
+        false,
         params.save_trimmed_fail,
         false
     )
@@ -151,7 +165,7 @@ workflow RSVRECON {
         ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_fastqc_multiqc_postrim.collect().ifEmpty([]))
 
         MULTIQC_FINALQC (
-            ch_multiqc_files.collect(),
+            ch_multiqc_finalqc_files.collect(),
             ch_multiqc_config.toList(),
             ch_multiqc_custom_config.toList(),
             ch_multiqc_logo.toList(),
