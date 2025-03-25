@@ -25,6 +25,11 @@
                         "git_sha": "666652151335353eef2fcd58880bcef5bc2928e1",
                         "installed_by": ["modules"]
                     },
+                    "gunzip": {
+                        "branch": "master",
+                        "git_sha": "81880787133db07d9b4c1febd152c090eb8325dc",
+                        "installed_by": ["modules"]
+                    },
                     "kma/index": {
                         "branch": "master",
                         "git_sha": "5a32b2de5a5368b02e7ba65f7ebed46f37f17eae",
