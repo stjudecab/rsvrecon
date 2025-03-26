@@ -2,17 +2,29 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     PARAMETER CHECK AND PRESET
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-/*
+*/
 
 // Check input path parameters
 def checkPathParamList = [
-    params.fasta, params.kma_index
+    params.fasta, params.kma_index,
+    params.rsv_gff, params.rsv_meta_file
 ]
 
 for (param in checkPathParamList) {
     if (param) { file(param, checkIfExists: true) }
 }
 
+
+if (params.rsv_gff) {
+    rsv_gff = file(params.rsv_gff, type: 'file', checkIfExists: true)
+} else {
+    rsv_gff = file("${projectDir}/db/rsv.gff", type: 'file', checkIfExists: true)
+}
+if (params.rsv_meta_file) {
+    rsv_meta = file(params.rsv_meta_file, type: 'file', checkIfExists: true)
+} else {
+    rsv_meta = file("${projectDir}/db/rsv.csv", type: 'file', checkIfExists: true)
+}
 
 
 /*
@@ -37,6 +49,7 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 // MODULE: Loaded from modules/local/
 //
 include { KMA_MAP                    } from '../modules/local/kma_map'
+include { READ_KMA                   } from '../modules/local/read_kma'
 
 //
 // SUBWORKFLOW: Consisting a mix of local and nf-core/modules
@@ -138,7 +151,20 @@ workflow RSVRECON {
     // MODULE: Alignment with KMA for identifying best
     //
     KMA_MAP ( ch_trimmed_fastq, kma_index.map{ it[1] } )
+    ch_kma_map_res = KMA_MAP.out.res
     ch_versions = ch_versions.mix(KMA_MAP.out.versions.first())
+
+    //
+    // READ the KMA results and get the best matched reference id
+    //
+    READ_KMA (
+        ch_kma_map_res,
+        fasta.map { it[1] },
+        rsv_gff,
+        rsv_meta_file)
+
+    ch_match_ref_id = READ_KMA.out.reference_id
+    ch_versions = ch_versions.mix(READ_KMA.out.versions.first())
 
     //
     // Collate and save software versions
