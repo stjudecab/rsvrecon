@@ -62,6 +62,7 @@ include { PREPARE_REFERENCE_FILES    } from '../subworkflows/local/prepare_refer
 // MODULE: Installed directly from nf-core/modules (possibly with some patches)
 //
 include { CAT_FASTQ                  } from '../modules/nf-core/cat/fastq/main'
+include { STAR_GENOMEGENERATE        } from '../modules/nf-core/star/genomegenerate/main'
 include { MULTIQC as MULTIQC_RAWQC   } from '../modules/nf-core/multiqc/main'
 include { MULTIQC as MULTIQC_FINALQC } from '../modules/nf-core/multiqc/main'
 
@@ -164,7 +165,14 @@ workflow RSVRECON {
         rsv_meta)
 
     ch_match_ref_id = READ_KMA.out.ref_id
+    ch_matched_ref_fasta = READ_KMA.out.fasta
     ch_versions = ch_versions.mix(READ_KMA.out.versions.first())
+
+    //
+    // SUBWORKFLOW: STAR index and mapping the matched genome
+    //
+    STAR_GENOMEGENERATE ( ch_matched_ref_fasta, [[:],[]] )
+
 
     //
     // Collate and save software versions
