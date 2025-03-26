@@ -161,9 +161,9 @@ workflow RSVRECON {
         ch_kma_map_res,
         fasta.map { it[1] },
         rsv_gff,
-        rsv_meta_file)
+        rsv_meta)
 
-    ch_match_ref_id = READ_KMA.out.reference_id
+    ch_match_ref_id = READ_KMA.out.ref_id
     ch_versions = ch_versions.mix(READ_KMA.out.versions.first())
 
     //

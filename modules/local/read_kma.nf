@@ -1,4 +1,4 @@
-process SAMPLESHEET_CHECK {
+process READ_KMA {
     tag "$meta.id"
     label 'process_single'
 
