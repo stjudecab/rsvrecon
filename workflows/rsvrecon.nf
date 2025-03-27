@@ -7,7 +7,7 @@
 // Check input path parameters
 def checkPathParamList = [
     params.fasta, params.kma_index,
-    params.rsv_gff, params.rsv_meta_file
+    params.rsv_gff, params.rsv_meta_file, params.blast_db
 ]
 
 for (param in checkPathParamList) {
@@ -18,12 +18,12 @@ for (param in checkPathParamList) {
 if (params.rsv_gff) {
     rsv_gff = file(params.rsv_gff, type: 'file', checkIfExists: true)
 } else {
-    rsv_gff = file("${projectDir}/db/rsv.gff", type: 'file', checkIfExists: true)
+    rsv_gff = file("${projectDir}/vendor/RSV.gff", type: 'file', checkIfExists: true)
 }
 if (params.rsv_meta_file) {
     rsv_meta = file(params.rsv_meta_file, type: 'file', checkIfExists: true)
 } else {
-    rsv_meta = file("${projectDir}/db/rsv.csv", type: 'file', checkIfExists: true)
+    rsv_meta = file("${projectDir}/vendor/RSV.csv", type: 'file', checkIfExists: true)
 }
 
 
@@ -50,6 +50,8 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 //
 include { KMA_MAP                    } from '../modules/local/kma_map'
 include { READ_KMA                   } from '../modules/local/read_kma'
+include { IGVTOOLS_COUNT             } from '../modules/local/igvtools_count'
+include { ASSEMBLE_SEQUENCE          } from '../modules/local/assemble_sequence'
 
 //
 // SUBWORKFLOW: Consisting a mix of local and nf-core/modules
@@ -61,11 +63,13 @@ include { BAM_SORT_STATS_SAMTOOLS    } from '../subworkflows/nf-core/bam_sort_st
 //
 // MODULE: Installed directly from nf-core/modules (possibly with some patches)
 //
-include { CAT_FASTQ                  } from '../modules/nf-core/cat/fastq/main'
-include { STAR_GENOMEGENERATE        } from '../modules/nf-core/star/genomegenerate/main'
-include { STAR_ALIGN                 } from '../modules/nf-core/star/align/main'
-include { MULTIQC as MULTIQC_RAWQC   } from '../modules/nf-core/multiqc/main'
-include { MULTIQC as MULTIQC_FINALQC } from '../modules/nf-core/multiqc/main'
+include { CAT_FASTQ                    } from '../modules/nf-core/cat/fastq/main'
+include { STAR_GENOMEGENERATE          } from '../modules/nf-core/star/genomegenerate/main'
+include { STAR_ALIGN                   } from '../modules/nf-core/star/align/main'
+include { SAMTOOLS_MPILEUP             } from '../modules/nf-core/samtools/mpileup/main'
+include { BLAST_BLASTN as BLAST_GISAID } from '../modules/nf-core/blast/blastn/main'
+include { MULTIQC as MULTIQC_RAWQC     } from '../modules/nf-core/multiqc/main'
+include { MULTIQC as MULTIQC_FINALQC   } from '../modules/nf-core/multiqc/main'
 
 //
 // SUBWORKFLOW: Consisting entirely of nf-core/modules
@@ -180,8 +184,8 @@ workflow RSVRECON {
             .join(STAR_GENOMEGENERATE.out.index, by: [0]),
         [[:], []],
         true,
-        null,
-        null
+        [],
+        []
     )
     ch_star_bam = STAR_ALIGN.out.bam
     ch_versions = ch_versions.mix(STAR_ALIGN.out.versions.first())
@@ -189,7 +193,7 @@ workflow RSVRECON {
     //
     // SUBWORKFLOW: BAM_SORT_STATS_SAMTOOLS
     //
-    BAM_SORT_STATS_SAMTOOLS ( ch_star_bam, fasta )
+    BAM_SORT_STATS_SAMTOOLS ( ch_star_bam, ch_matched_ref_fasta )
 
     ch_star_sorted_bam = BAM_SORT_STATS_SAMTOOLS.out.bam
     ch_star_sorted_bai = BAM_SORT_STATS_SAMTOOLS.out.bai
@@ -200,6 +204,37 @@ workflow RSVRECON {
     ch_star_sorted_idxstats = BAM_SORT_STATS_SAMTOOLS.out.idxstats
     ch_versions = ch_versions.mix(BAM_SORT_STATS_SAMTOOLS.out.versions)
 
+    //
+    // MODULE: SAMTOOLS MPILEUP
+    //
+    SAMTOOLS_MPILEUP ( ch_star_sorted_bam.join(ch_matched_ref_fasta, by: [0]) )
+    ch_versions = ch_versions.mix(SAMTOOLS_MPILEUP.out.versions.first())
+
+    //
+    // MODULE: IGV-Tools to count
+    //
+    IGVTOOLS_COUNT ( ch_star_sorted_bam.join(ch_matched_ref_fasta, by: [0]) )
+    ch_base_count = IGVTOOLS_COUNT.out.count
+    ch_versions = ch_versions.mix(IGVTOOLS_COUNT.out.versions.first())
+
+    //
+    // MODULE: Assemble sequences
+    //
+    ASSEMBLE_SEQUENCE (
+        ch_base_count.join(ch_matched_ref_fasta, by: [0]),
+        params.igv_cutoff ?: 50
+    )
+    ch_consensus_fasta = ASSEMBLE_SEQUENCE.out.consensus
+    ch_versions = ch_versions.mix(ASSEMBLE_SEQUENCE.out.versions.first())
+
+    //
+    // MODULE: BlastGISAID
+    //
+    BLAST_GISAID (
+        ch_consensus_fasta,
+        [[:], file(params.blast_db, type: 'dir', checkIfExists: true)]
+    )
+    ch_versions = ch_versions.mix(BLAST_GISAID.out.versions.first())
 
 
     //
