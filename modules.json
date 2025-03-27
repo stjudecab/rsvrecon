@@ -39,6 +39,12 @@
                         "branch": "master",
                         "git_sha": "cf17ca47590cc578dfb47db1c2a44ef86f89976d",
                         "installed_by": ["modules"]
+                    "nextclade/run": {
+                        "branch": "master",
+                        "git_sha": "cbd77a16449815913be03c6e7206e0693ddb4cca",
+                        "installed_by": [
+                            "modules"
+                        ]
                     },
                     "samtools/flagstat": {
                         "branch": "master",
