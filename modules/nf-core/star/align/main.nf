@@ -46,7 +46,6 @@ process STAR_ALIGN {
     def ignore_gtf      = star_ignore_sjdbgtf ? '' : "--sjdbGTFfile $gtf"
     def seq_platform_arg  = seq_platform ? "'PL:$seq_platform'" : ""
     def seq_center_arg    = seq_center ? "'CN:$seq_center'" : ""
-    attrRG          = args.contains("--outSAMattrRGline") ? "" : "--outSAMattrRGline 'ID:$prefix' $seq_center_arg 'SM:$prefix' $seq_platform_arg"
     def out_sam_type    = (args.contains('--outSAMtype')) ? '' : '--outSAMtype BAM Unsorted'
     mv_unsorted_bam = (args.contains('--outSAMtype BAM Unsorted SortedByCoordinate')) ? "mv ${prefix}.Aligned.out.bam ${prefix}.Aligned.unsort.out.bam" : ''
     """
@@ -57,7 +56,6 @@ process STAR_ALIGN {
         --outFileNamePrefix $prefix. \\
         $out_sam_type \\
         $ignore_gtf \\
-        $attrRG \\
         $args
 
     $mv_unsorted_bam
