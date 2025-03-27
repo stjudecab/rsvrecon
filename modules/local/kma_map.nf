@@ -18,7 +18,7 @@ process KMA_MAP {
     tuple val(meta), path("*.frag.gz"),  emit: frag     // Read mapping information
     tuple val(meta), path("*.mat.gz"),   optional:true, emit: matrix   // Base counts (only if -matrix is enabled)
     tuple val(meta), path("*.log"),      emit: log      // Log file
-    path "versions.yml",                         emit: versions
+    path "versions.yml",                 emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -61,11 +61,12 @@ process KMA_MAP {
         fi
     fi
 
+    # KMA will return nonezero code even no errors, so we add `|| true`
     kma ${read_command} \\
         -o ${prefix} \\
         -t_db \$INDEX_BASE \\
         $args \\
-        2> ${prefix}.log
+        2> ${prefix}.log || true
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
