@@ -56,13 +56,14 @@ include { READ_KMA                   } from '../modules/local/read_kma'
 //
 include { FASTQ_TRIM_FASTP_FASTQC    } from '../subworkflows/local/fastq_trim_fastp_fastqc'
 include { PREPARE_REFERENCE_FILES    } from '../subworkflows/local/prepare_reference_files'
-
+include { BAM_SORT_STATS_SAMTOOLS    } from '../subworkflows/nf-core/bam_sort_stats_samtools/main'
 
 //
 // MODULE: Installed directly from nf-core/modules (possibly with some patches)
 //
 include { CAT_FASTQ                  } from '../modules/nf-core/cat/fastq/main'
 include { STAR_GENOMEGENERATE        } from '../modules/nf-core/star/genomegenerate/main'
+include { STAR_ALIGN                 } from '../modules/nf-core/star/align/main'
 include { MULTIQC as MULTIQC_RAWQC   } from '../modules/nf-core/multiqc/main'
 include { MULTIQC as MULTIQC_FINALQC } from '../modules/nf-core/multiqc/main'
 
@@ -172,6 +173,33 @@ workflow RSVRECON {
     // SUBWORKFLOW: STAR index and mapping the matched genome
     //
     STAR_GENOMEGENERATE ( ch_matched_ref_fasta, [[:],[]] )
+    ch_versions = ch_versions.mix(STAR_GENOMEGENERATE.out.versions.first())
+
+    STAR_ALIGN (
+        ch_trimmed_fastq
+            .join(STAR_GENOMEGENERATE.out.index, by: [0]),
+        [[:], []],
+        true,
+        null,
+        null
+    )
+    ch_star_bam = STAR_ALIGN.out.bam
+    ch_versions = ch_versions.mix(STAR_ALIGN.out.versions.first())
+
+    //
+    // SUBWORKFLOW: BAM_SORT_STATS_SAMTOOLS
+    //
+    BAM_SORT_STATS_SAMTOOLS ( ch_star_bam, fasta )
+
+    ch_star_sorted_bam = BAM_SORT_STATS_SAMTOOLS.out.bam
+    ch_star_sorted_bai = BAM_SORT_STATS_SAMTOOLS.out.bai
+
+    // these stats go for multiqc
+    ch_star_sorted_stats    = BAM_SORT_STATS_SAMTOOLS.out.stats
+    ch_star_sorted_flagstat = BAM_SORT_STATS_SAMTOOLS.out.flagstat
+    ch_star_sorted_idxstats = BAM_SORT_STATS_SAMTOOLS.out.idxstats
+    ch_versions = ch_versions.mix(BAM_SORT_STATS_SAMTOOLS.out.versions)
+
 
 
     //
