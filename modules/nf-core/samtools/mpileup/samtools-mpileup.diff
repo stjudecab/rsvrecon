@@ -1,0 +1,29 @@
+Changes in module 'nf-core/samtools/mpileup'
+'modules/nf-core/samtools/mpileup/environment.yml' is unchanged
+'modules/nf-core/samtools/mpileup/meta.yml' is unchanged
+Changes in 'samtools/mpileup/main.nf':
+--- modules/nf-core/samtools/mpileup/main.nf
++++ modules/nf-core/samtools/mpileup/main.nf
+@@ -12,8 +12,8 @@
+     path  fasta
+ 
+     output:
+-    tuple val(meta), path("*.mpileup.gz"), emit: mpileup
+-    path  "versions.yml"                 , emit: versions
++    tuple val(meta), path("*.mpileup"), emit: mpileup
++    path  "versions.yml"              , emit: versions
+ 
+     when:
+     task.ext.when == null || task.ext.when
+@@ -29,7 +29,6 @@
+         $args \\
+         $intervals_arg \\
+         $input
+-    bgzip ${prefix}.mpileup
+ 
+     cat <<-END_VERSIONS > versions.yml
+     "${task.process}":
+
+'modules/nf-core/samtools/mpileup/tests/main.nf.test.snap' is unchanged
+'modules/nf-core/samtools/mpileup/tests/main.nf.test' is unchanged
+************************************************************
