@@ -8,8 +8,7 @@ process SAMTOOLS_MPILEUP {
         'biocontainers/samtools:1.21--h50ea8bc_0' }"
 
     input:
-    tuple val(meta), path(input), path(intervals)
-    path  fasta
+    tuple val(meta), path(input), path(fasta)
 
     output:
     tuple val(meta), path("*.mpileup"), emit: mpileup
@@ -21,13 +20,11 @@ process SAMTOOLS_MPILEUP {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def intervals_arg = intervals ? "-l ${intervals}" : ""
     """
     samtools mpileup \\
         --fasta-ref $fasta \\
         --output ${prefix}.mpileup \\
         $args \\
-        $intervals_arg \\
         $input
 
     cat <<-END_VERSIONS > versions.yml
@@ -39,9 +36,8 @@ process SAMTOOLS_MPILEUP {
     stub:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
-    def intervals_arg = intervals ? "-l ${intervals}" : ""
     """
-    touch ${prefix}.mpileup.gz
+    touch ${prefix}.mpileup
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
