@@ -8,8 +8,7 @@ process SAMTOOLS_SORT {
         'biocontainers/samtools:1.21--h50ea8bc_0' }"
 
     input:
-    tuple val(meta) , path(bam)
-    tuple val(meta2), path(fasta)
+    tuple val(meta), path(bam), path(fasta)
 
     output:
     tuple val(meta), path("*.bam"),  emit: bam,  optional: true
