@@ -275,9 +275,8 @@ workflow RSVRECON {
     //
     // SUBWORKFLOW: Genotype the whole genome
     //
-    // RSV_GENOTYPING ( ch_consensus_fasta )
-    // ch_versions = ch_versions.mix(RSV_GENOTYPING.out.versions)
-
+    RSV_GENOTYPING ( ch_consensus_fasta )
+    ch_versions = ch_versions.mix(RSV_GENOTYPING.out.versions)
 
 
     //
