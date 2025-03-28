@@ -68,6 +68,8 @@ include { STAR_GENOMEGENERATE          } from '../modules/nf-core/star/genomegen
 include { STAR_ALIGN                   } from '../modules/nf-core/star/align/main'
 include { SAMTOOLS_MPILEUP             } from '../modules/nf-core/samtools/mpileup/main'
 include { BLAST_BLASTN as BLAST_GISAID } from '../modules/nf-core/blast/blastn/main'
+include { NEXTCLADE_DATASETGET         } from '../modules/nf-core/nextclade/datasetget/main'
+include { NEXTCLADE_RUN                } from '../modules/nf-core/nextclade/run/main'
 include { MULTIQC as MULTIQC_RAWQC     } from '../modules/nf-core/multiqc/main'
 include { MULTIQC as MULTIQC_FINALQC   } from '../modules/nf-core/multiqc/main'
 
@@ -169,9 +171,26 @@ workflow RSVRECON {
         rsv_gff,
         rsv_meta)
 
-    ch_match_ref_id = READ_KMA.out.ref_id
-    ch_matched_ref_fasta = READ_KMA.out.fasta
     ch_versions = ch_versions.mix(READ_KMA.out.versions.first())
+
+    // move env vars to meta
+    READ_KMA.out.fasta
+        .map { meta, fasta, ref_subtype_env ->
+            [meta + [subtype: ref_subtype_env], fasta]
+        }
+        .set { ch_matched_ref_fasta }
+
+    READ_KMA.out.gff
+        .map { meta, gff, ref_subtype_env ->
+            [meta + [subtype: ref_subtype_env, gff]]
+        }
+        .set { ch_matched_ref_gff }
+
+    ch_trimmed_fastq.join(
+        READ_KMA.out.fasta, by: [0]
+    ).map { meta, fastq, fasta, ref_subtype_env ->
+        [ meta + [subtype: ref_subtype_env], fastq ]
+    }.set { ch_trimmed_fastq }
 
     //
     // SUBWORKFLOW: STAR index and mapping the matched genome
@@ -236,6 +255,30 @@ workflow RSVRECON {
     )
     ch_versions = ch_versions.mix(BLAST_GISAID.out.versions.first())
 
+    //
+    // MODULE: Next Clade
+    //
+
+    // Get the NextClade RSV dataset based on ref_id
+    NEXTCLADE_DATASETGET( ch_consensus_fasta.map{ it[0] }, [] )
+    ch_versions = ch_versions.mix(NEXTCLADE_DATASETGET.out.versions.first())
+
+    // Run the Nextclade to call variants
+    NEXTCLADE_RUN (
+        ch_consensus_fasta.join(
+            NEXTCLADE_DATASETGET.out.dataset,
+            by: [0]
+        )
+    )
+    ch_versions = ch_versions.mix(NEXTCLADE_RUN.out.versions.first())
+
+    //
+    // SUBWORKFLOW: Genotype the whole genome
+    //
+    // RSV_GENOTYPING ( ch_consensus_fasta )
+    // ch_versions = ch_versions.mix(RSV_GENOTYPING.out.versions)
+
+
 
     //
     // Collate and save software versions
@@ -265,7 +308,7 @@ workflow RSVRECON {
         ch_multiqc_rawqc_files = ch_multiqc_rawqc_files.mix(ch_collated_versions)
         ch_multiqc_rawqc_files = ch_multiqc_rawqc_files.mix(ch_methods_description_file)
 
-        MULTIQC_RAWQC(
+        MULTIQC_RAWQC (
             ch_multiqc_rawqc_files.collect(),
             ch_multiqc_config.toList(),
             ch_multiqc_custom_config.toList(),
