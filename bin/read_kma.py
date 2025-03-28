@@ -293,7 +293,7 @@ def determine_rsv_status(
     template_identity: float,
     subtype: str,
     identity_cutoff: float
-) -> str:
+) -> dict:
     """
     Determine RSV status based on identity match.
 
@@ -306,10 +306,11 @@ def determine_rsv_status(
     Returns:
         Comma-separated string with classification, reference ID, and subtype
     """
-    if template_identity > identity_cutoff:
-        return f"{subtype},{reference_id},{subtype}"
-    else:
-        return f"Not RSV,{reference_id},{subtype}"
+    return {
+        "SUBTYPE": subtype if template_identity > identity_cutoff else "NotRSV",
+        "REF_ID": reference_id,
+        "REF_SUBTYPE": subtype
+    }
 
 
 def main(args: argparse.Namespace) -> int:
@@ -373,7 +374,18 @@ def main(args: argparse.Namespace) -> int:
             subtype,
             identity_cutoff
         )
-        print(f"{best_ref_id},{rsv_status}")
+        # print(f"{best_ref_id},{rsv_status}")
+        rsv_status.update({ "STRAIN_ID": best_ref_id })
+
+        # write out the ref_id and rsv_status as env vars
+        sys.stdout.write(
+            "\n".join(
+                [
+                    f"{k}={v}"
+                    for k, v in rsv_status.values()
+                ]
+            )
+        )
 
         return 0
 
