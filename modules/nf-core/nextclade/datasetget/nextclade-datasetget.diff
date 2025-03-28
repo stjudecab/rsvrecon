@@ -1,0 +1,69 @@
+Changes in module 'nf-core/nextclade/datasetget'
+'modules/nf-core/nextclade/datasetget/environment.yml' is unchanged
+'modules/nf-core/nextclade/datasetget/meta.yml' is unchanged
+Changes in 'nextclade/datasetget/main.nf':
+--- modules/nf-core/nextclade/datasetget/main.nf
++++ modules/nf-core/nextclade/datasetget/main.nf
+@@ -1,5 +1,5 @@
+ process NEXTCLADE_DATASETGET {
+-    tag "$dataset"
++    tag "$meta.id"
+     label 'process_low'
+ 
+     conda "${moduleDir}/environment.yml"
+@@ -8,28 +8,45 @@
+         'community.wave.seqera.io/library/nextclade:3.11.0--155203da8341cfe6' }"
+ 
+     input:
+-    val dataset
++    tuple val(meta), path(ref_id)
+     val tag
+ 
+     output:
+-    path "$prefix"     , emit: dataset
+-    path "versions.yml", emit: versions
++    tuple val(meta), path("*.db") , emit: dataset
++    path "versions.yml"           , emit: versions
+ 
+     when:
+     task.ext.when == null || task.ext.when
+ 
+     script:
+     def args = task.ext.args ?: ''
+-    prefix = task.ext.prefix ?: "${dataset}"
+     def version = tag ? "--tag ${tag}" : ''
+     """
++    # extract the dataset from the read_id file using 'cut'
++    strain_info = \$(cat ref_id)
++    strain_id=\$(echo \$strain_info | cut -d ',' -f1)
++    subtype=\$(echo \$strain_info | cut -d ',' -f2)
++    ref_strain_id2=\$(echo \$strain_info | cut -d ',' -f3)
++    ref_subtype=\$(echo \$strain_info | cut -d ',' -f4)
++
++    # Determine the reference path based on the subtype
++    if [[ "\$ref_subtype" == "SubtypeA" ]]; then
++        dataset="rsv_a"
++    elif [[ "\$ref_subtype" == "SubtypeB" ]]; then
++        dataset="rsv_b"
++    else
++        echo "Unknown subtype: \$dataset"
++        exit 1
++    fi
++
++    # download the nextclade rsv database
+     nextclade \\
+         dataset \\
+         get \\
+         $args \\
+-        --name $dataset \\
++        --name \$dataset \\
+         $version \\
+-        --output-dir $prefix
++        --output-dir \$dataset.nextclade.db
+ 
+     cat <<-END_VERSIONS > versions.yml
+     "${task.process}":
+
+'modules/nf-core/nextclade/datasetget/tests/main.nf.test.snap' is unchanged
+'modules/nf-core/nextclade/datasetget/tests/main.nf.test' is unchanged
+************************************************************
