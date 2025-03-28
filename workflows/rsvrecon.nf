@@ -7,7 +7,8 @@
 // Check input path parameters
 def checkPathParamList = [
     params.fasta, params.kma_index,
-    params.rsv_gff, params.rsv_meta_file, params.blast_db
+    params.rsv_gff, params.rsv_meta_file, params.blast_db,
+    params.genotype_fasta, params.genotype_meta_file
 ]
 
 for (param in checkPathParamList) {
@@ -20,10 +21,23 @@ if (params.rsv_gff) {
 } else {
     rsv_gff = file("${projectDir}/vendor/RSV.gff", type: 'file', checkIfExists: true)
 }
+
 if (params.rsv_meta_file) {
     rsv_meta = file(params.rsv_meta_file, type: 'file', checkIfExists: true)
 } else {
     rsv_meta = file("${projectDir}/vendor/RSV.csv", type: 'file', checkIfExists: true)
+}
+
+if (params.genotype_fasta) {
+    genotype_ref_fasta = file(params.genotype_fasta, type: 'file', checkIfExists: true)
+} else {
+    genotype_ref_fasta = file("${projectDir}/vendor/genotype/NextStrain.fasta.gz", type: 'file', checkIfExists: true)
+}
+
+if (params.genotype_meta_file) {
+    genotype_ref_meta  = file(params.genotype_meta_file, type: 'file', checkIfExists: true)
+} else {
+    genotype_ref_meta  = file("${projectDir}/vendor/genotype/NextStrain.tsv", type: 'file', checkIfExists: true)
 }
 
 
@@ -59,6 +73,7 @@ include { ASSEMBLE_SEQUENCE          } from '../modules/local/assemble_sequence'
 include { FASTQ_TRIM_FASTP_FASTQC    } from '../subworkflows/local/fastq_trim_fastp_fastqc'
 include { PREPARE_REFERENCE_FILES    } from '../subworkflows/local/prepare_reference_files'
 include { BAM_SORT_STATS_SAMTOOLS    } from '../subworkflows/nf-core/bam_sort_stats_samtools/main'
+include { RSV_GENOTYPING             } from '../subworkflows/local/rsv_genotyping'
 
 //
 // MODULE: Installed directly from nf-core/modules (possibly with some patches)
@@ -275,7 +290,11 @@ workflow RSVRECON {
     //
     // SUBWORKFLOW: Genotype the whole genome
     //
-    RSV_GENOTYPING ( ch_consensus_fasta )
+    RSV_GENOTYPING (
+        ch_consensus_fasta,
+        Channel.value(genotype_ref_fasta).map {[[:], it]},
+        Channel.value(genotype_ref_meta).map {[[:], it]}
+    )
     ch_versions = ch_versions.mix(RSV_GENOTYPING.out.versions)
 
 
