@@ -14,10 +14,9 @@ process READ_KMA {
     path meta_file
 
     output:
-    tuple val(meta), path("*.txt")   , emit: ref_id
-    tuple val(meta), path("*.fasta") , emit: fasta
-    tuple val(meta), path("*.gff")   , emit: gff
-    path "versions.yml"              , emit: versions
+    tuple val(meta), path("*.fasta"), env(REF_SUBTYPE), emit: fasta
+    tuple val(meta), path("*.gff"),   env(REF_SUBTYPE), emit: reference
+    path "versions.yml"                               , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -32,7 +31,9 @@ process READ_KMA {
         --ref-metadata $meta_file \\
         --output . \\
         $args \\
-        > reference_id.txt
+        > env.vars
+
+    source env.vars
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
