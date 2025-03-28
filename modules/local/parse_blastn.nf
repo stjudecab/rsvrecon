@@ -1,5 +1,6 @@
 process PARSE_BLASTN {
-    tag "${meta.id}"
+    tag "$meta.id"
+    label 'process_single'
 
     conda "conda-forge::python=3.9.12 bioconda::biopython=1.79 conda-forge::pandas=1.3.5"
     container "${ workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
