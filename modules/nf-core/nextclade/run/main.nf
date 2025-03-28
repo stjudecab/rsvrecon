@@ -8,8 +8,7 @@ process NEXTCLADE_RUN {
         'community.wave.seqera.io/library/nextclade:3.11.0--155203da8341cfe6' }"
 
     input:
-    tuple val(meta), path(fasta)
-    path dataset
+    tuple val(meta), path(fasta), path(dataset)
 
     output:
     tuple val(meta), path("${prefix}.csv")           , optional:true, emit: csv
