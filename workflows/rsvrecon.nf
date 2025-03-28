@@ -292,6 +292,7 @@ workflow RSVRECON {
     //
     RSV_GENOTYPING (
         ch_consensus_fasta,
+        ch_matched_ref_fasta,
         Channel.value(genotype_ref_fasta).map {[[:], it]},
         Channel.value(genotype_ref_meta).map {[[:], it]}
     )
