@@ -382,7 +382,7 @@ def main(args: argparse.Namespace) -> int:
             "\n".join(
                 [
                     f"{k}={v}"
-                    for k, v in rsv_status.values()
+                    for k, v in rsv_status.items()
                 ]
             )
         )

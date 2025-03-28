@@ -32,9 +32,9 @@ process NEXTCLADE_DATASETGET {
         dataset \\
         get \\
         $args \\
-        --name \$dataset \\
+        --name $dataset \\
         $version \\
-        --output-dir \$dataset.nextclade.db
+        --output-dir "${dataset}.nextclade.db"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

@@ -182,7 +182,7 @@ workflow RSVRECON {
 
     READ_KMA.out.gff
         .map { meta, gff, ref_subtype_env ->
-            [meta + [subtype: ref_subtype_env, gff]]
+            [meta + [subtype: ref_subtype_env], gff]
         }
         .set { ch_matched_ref_gff }
 
