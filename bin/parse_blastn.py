@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 
+"""
+BLASTN Alignment Parser
+
+This script analyzes blastn results to determine RSV (Respiratory Syncytial Virus) genotypes.
+It takes a blastn output file and a metadata file as inputs, identifies the best match,
+and outputs the genotype information in a CSV format.
+
+Author: Haidong Yi (hyi@stjude.org)
+        Lei Li (lei.li@stjude.org)
+Date: March 28, 2025
+"""
+
 import argparse
 import pandas as pd
 import os
