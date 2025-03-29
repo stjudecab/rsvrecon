@@ -1,0 +1,13 @@
+name: visualize_tree
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base=4.3
+  - r-ggplot2
+  - r-biocmanager
+  - bioconductor-ggtree=3.10.0
+  - bioconductor-treeio
+  - r-tidyverse
+  - r-devtools
