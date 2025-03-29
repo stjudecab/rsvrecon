@@ -9,6 +9,7 @@ include { CAT_CAT as CAT_FASTA                        } from '../../modules/nf-c
 include { MAFFT_ALIGN                                 } from '../../modules/nf-core/mafft/align/main'
 include { FASTTREE                                    } from '../../modules/nf-core/fasttree/main'
 include { PARSE_BLASTN                                } from '../../modules/local/parse_blastn'
+include { VISUALIZE_PHYLOGENETIC_TREE                 } from '../../modules/local/visualize_tree/main'
 
 
 workflow RSV_GENOTYPING {
@@ -83,12 +84,14 @@ workflow RSV_GENOTYPING {
     Channel.of(
         [
             "SubtypeA",
+            "MG642074|A",
             file("${projectDir}/vendor/TreeReference/representative_ref_A.fasta", type: 'file', checkIfExists: true),
             file("${projectDir}/vendor/TreeReference/representative_ref_A.csv",   type: 'file', checkIfExists: true),
             file("${projectDir}/vendor/TreeReference/color_A.csv",                type: 'file', checkIfExists: true)
         ],
         [
             "SubtypeB",
+            "Ger/302/98-99|B",
             file("${projectDir}/vendor/TreeReference/representative_ref_B.fasta", type: 'file', checkIfExists: true),
             file("${projectDir}/vendor/TreeReference/representative_ref_B.csv",   type: 'file', checkIfExists: true),
             file("${projectDir}/vendor/TreeReference/color_B.csv",                type: 'file', checkIfExists: true)
@@ -103,14 +106,13 @@ workflow RSV_GENOTYPING {
     }
     .join(ch_graph_db_files, by: [0])
     .map {
-        subtype, meta, tree, ref_fasta, ref_csv, color_csv ->
-        [meta, tree, ref_fasta, ref_csv, color_csv]
+        subtype, meta, tree, out_group, ref_fasta, ref_csv, color_csv ->
+        [meta + [strain:out_group], tree, ref_csv, color_csv]
     }.set { ch_graph_input }
 
     // Run the drawing script for generating trees
-
-
-
+    VISUALIZE_PHYLOGENETIC_TREE ( ch_graph_input )
+    ch_versions = ch_versions.mix(VISUALIZE_PHYLOGENETIC_TREE.out.versions.first())
 
     emit:
 
