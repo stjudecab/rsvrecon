@@ -51,11 +51,38 @@ workflow RSV_GENOTYPING {
     //
     // Step 3: Generate tree
     //
+
+    Channel.of(
+        [
+            "SubtypeA",
+            "MG642074|A",
+            file("${projectDir}/vendor/TreeReference/representative_ref_A.fasta", type: 'file', checkIfExists: true),
+            file("${projectDir}/vendor/TreeReference/representative_ref_A.csv",   type: 'file', checkIfExists: true),
+            file("${projectDir}/vendor/TreeReference/color_A.csv",                type: 'file', checkIfExists: true)
+        ],
+        [
+            "SubtypeB",
+            "Ger/302/98-99|B",
+            file("${projectDir}/vendor/TreeReference/representative_ref_B.fasta", type: 'file', checkIfExists: true),
+            file("${projectDir}/vendor/TreeReference/representative_ref_B.csv",   type: 'file', checkIfExists: true),
+            file("${projectDir}/vendor/TreeReference/color_B.csv",                type: 'file', checkIfExists: true)
+        ]
+    )
+    .set { ch_tree_ref_files }
+
     ch_consensus_fasta
-        .join( ch_matched_ref_fasta, by: [0])
+        .map { meta, fasta ->
+            [meta.subtype, meta, fasta]
+        }
+        .join ( ch_tree_ref_files, by: [0])
+        .map { subtype, meta, fasta, out_group, ref_fasta, ref_csv, color_csv ->
+            [ meta, fasta, out_group, ref_fasta, ref_csv, color_csv ]
+        }
+        .set { ch_tree_input }
+
+    ch_tree_input
         .map {
-            meta, fasta, fasta_ref ->
-                [ meta, [fasta, fasta_ref] ]
+            [ it[0], [it[1], it[3]] ] // Channel: [ meta, [fasta, ref_fasta] ]
         }.set{ ch_concat_fasta }
 
     CAT_FASTA (ch_concat_fasta)
@@ -80,38 +107,23 @@ workflow RSV_GENOTYPING {
     ch_phylogeny_tree = FASTTREE.out.phylogeny
     ch_versions = ch_versions.mix(FASTTREE.out.versions.first())
 
-    // Run the script to draw the figure
-    Channel.of(
-        [
-            "SubtypeA",
-            "MG642074|A",
-            file("${projectDir}/vendor/TreeReference/representative_ref_A.fasta", type: 'file', checkIfExists: true),
-            file("${projectDir}/vendor/TreeReference/representative_ref_A.csv",   type: 'file', checkIfExists: true),
-            file("${projectDir}/vendor/TreeReference/color_A.csv",                type: 'file', checkIfExists: true)
-        ],
-        [
-            "SubtypeB",
-            "Ger/302/98-99|B",
-            file("${projectDir}/vendor/TreeReference/representative_ref_B.fasta", type: 'file', checkIfExists: true),
-            file("${projectDir}/vendor/TreeReference/representative_ref_B.csv",   type: 'file', checkIfExists: true),
-            file("${projectDir}/vendor/TreeReference/color_B.csv",                type: 'file', checkIfExists: true)
-        ]
-    )
-    .set { ch_graph_db_files }
 
     // Join the tree reference files with the tree file
     ch_phylogeny_tree
-        .map { meta, tree ->
-        [meta.subtype, meta, tree]
-    }
-    .join(ch_graph_db_files, by: [0])
-    .map {
-        subtype, meta, tree, out_group, ref_fasta, ref_csv, color_csv ->
-        [meta + [strain:out_group], tree, ref_csv, color_csv]
-    }.set { ch_graph_input }
+        .join( ch_tree_input.map {
+            meta, fasta, out_group, ref_fasta, ref_csv, color_csv ->
+                [ meta, out_group, ref_csv, color_csv ]
+            },
+            by: [0]
+        )
+        .map {
+            meta, tree, out_group, ref_csv, color_csv ->
+                [ meta + [strain:out_group], tree, ref_csv, color_csv ]
+        }
+        .set { ch_render_tree }
 
     // Run the drawing script for generating trees
-    VISUALIZE_PHYLOGENETIC_TREE ( ch_graph_input )
+    VISUALIZE_PHYLOGENETIC_TREE ( ch_render_tree )
     ch_versions = ch_versions.mix(VISUALIZE_PHYLOGENETIC_TREE.out.versions.first())
 
     emit:
