@@ -301,6 +301,7 @@ def main():
     args = parser.parse_args()
 
     # Setup logging
+    global logger
     logger = setup_logger(args.log)
 
     # Set logging level based on verbosity
