@@ -40,6 +40,12 @@ if (params.genotype_meta_file) {
     genotype_ref_meta  = file("${projectDir}/vendor/genotype/NextStrain.tsv", type: 'file', checkIfExists: true)
 }
 
+if (params.ggene_genotype_fasta) {
+    genotype_ggene_ref_fasta = file(params.genotype_ggene_fasta, type: 'file', checkIfExists: true)
+} else {
+    genotype_ggene_ref_fasta = file("${projectDir}/vendor/genotype/G_subtype.fasta.gz", type: 'file', checkIfExists: true)
+}
+
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -288,15 +294,25 @@ workflow RSVRECON {
     ch_versions = ch_versions.mix(NEXTCLADE_RUN.out.versions.first())
 
     //
-    // SUBWORKFLOW: Genotype the whole genome
+    // SUBWORKFLOW: Genotyping with the whole genome
     //
-    RSV_GENOTYPING (
+    RSV_WHOLEGENOME_GENOTYPING (
         ch_consensus_fasta,
         Channel.value(genotype_ref_fasta).map {[[:], it]},
         Channel.value(genotype_ref_meta).map {[[:], it]}
     )
-    ch_versions = ch_versions.mix(RSV_GENOTYPING.out.versions)
+    ch_versions = ch_versions.mix(RSV_WHOLEGENOME_GENOTYPING.out.versions)
 
+    //
+    // SUBWORKFLOW: Genotyping with the G-gene only
+    //
+    RSV_GGENE_GENOTYPING (
+        ch_consensus_fasta,
+        Channel.value(genotype_ggene_ref_fasta.map {[[:], it]}),
+        ch_matched_ref_fasta,
+        ch_matched_ref_gff
+    )
+    ch_versions = ch_versions.mix(RSV_GGENE_GENOTYPING.out.versions)
 
     //
     // Collate and save software versions
