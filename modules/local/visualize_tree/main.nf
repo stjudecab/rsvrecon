@@ -19,12 +19,12 @@ process VISUALIZE_PHYLOGENETIC_TREE {
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    cp $meta_file genotype.csv
-    echo "${meta.id},Query,Query\n" >> genotype.csv
+    cp $annotation genotype.csv
+    echo "${meta.id},Query,Query\\n" >> genotype.csv
 
     visualize_tree.R \\
         $tree \\
-        ${meta.strain} \\
+        "${meta.strain}" \\
         genotype.csv \\
         ${prefix}.phylogenetic.png \\
         $color \\
@@ -33,10 +33,9 @@ process VISUALIZE_PHYLOGENETIC_TREE {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         r-base: \$(echo \$(R --version 2>&1) | sed 's/^.*R version //; s/ .*\$//')
-        ggplot2: \$(Rscript -e "cat(as.character(packageVersion('ggplot2')))")
-        ggtree: \$(Rscript -e "cat(as.character(packageVersion('ggtree')))")
-        treeio: \$(Rscript -e "cat(as.character(packageVersion('treeio')))")
+        r-ggplot2: \$(Rscript -e "library(ggplot2); cat(as.character(packageVersion('ggplot2')))")
+        r-ggtree: \$(Rscript -e "library(ggtree); cat(as.character(packageVersion('ggtree')))")
+        r-treeio: \$(Rscript -e "library(treeio); cat(as.character(packageVersion('treeio')))")
     END_VERSIONS
     """
-
 }
