@@ -16,7 +16,6 @@ workflow RSV_GENOTYPING {
 
     take:
     ch_consensus_fasta       // Channel: [ val(meta), path(fasta) ]
-    ch_matched_ref_fasta     // Channel; [ val(meta), path(fasta) ]
     ch_genotyping_blast_ref  // path/to/RSV_AB.fasta
     ch_genotyping_blast_meta // path/to/RSV_AB_meta.txt
 
