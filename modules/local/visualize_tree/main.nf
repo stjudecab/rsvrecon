@@ -20,7 +20,7 @@ process VISUALIZE_PHYLOGENETIC_TREE {
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
     cp $annotation genotype.csv
-    echo "${meta.id},Query,Query\\n" >> genotype.csv
+    echo -e "${meta.id},Query,Query\\n" >> genotype.csv
 
     visualize_tree.R \\
         $tree \\
