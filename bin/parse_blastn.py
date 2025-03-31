@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-BLASTN Alignment Parser
+Whole Genome RSV Genotyper
 
 This script analyzes blastn results to determine RSV (Respiratory Syncytial Virus) genotypes.
 It takes a blastn output file and a metadata file as inputs, identifies the best match,
@@ -18,8 +18,21 @@ import os
 import sys
 import logging
 
+
 def setup_logging():
-    """Configure logging format and level."""
+    """
+    Configure logging format and level.
+
+    Args:
+        log_file: Optional path to write logs to a file in addition to stdout
+
+    Returns:
+        Configured logger instance
+    """
+    handlers = [logging.StreamHandler(sys.stdout)]
+    if log_file:
+        handlers.append(logging.FileHandler(log_file))
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s [%(levelname)s] %(message)s',
@@ -109,6 +122,7 @@ def parse_args():
     parser.add_argument('--blast_out', required=True, help='Path to blastn results file')
     parser.add_argument('--meta_file', required=True, help='Path to metadata file')
     parser.add_argument('--output', default='Genotype.txt', help='Output file path (default: Genotype.txt)')
+    parser.add_argument('--log', help="Log file path")
 
     # Optional parameters (for compatibility with pipeline)
     parser.add_argument('--query', help='Path to query file (not used for processing)')
@@ -122,7 +136,7 @@ def parse_args():
 def main():
     """Main function to determine genotype and write results."""
     args = parse_args()
-    logger = setup_logging()
+    logger = setup_logging(args.log)
 
     logger.info("=== RSV Genotyper ===")
     logger.info(f"Blast results: {args.blast_out}")
@@ -147,4 +161,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
+

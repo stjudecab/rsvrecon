@@ -27,6 +27,7 @@ process PARSE_BLASTN {
         --meta_file ${meta_file} \\
         --output ${prefix}_genotype.txt \\
         --seq_id ${meta.id} \\
+        --log "${prefix}.log" \\
         $args
 
     cat <<-END_VERSIONS > versions.yml
