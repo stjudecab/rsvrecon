@@ -79,7 +79,8 @@ include { ASSEMBLE_SEQUENCE          } from '../modules/local/assemble_sequence'
 include { FASTQ_TRIM_FASTP_FASTQC    } from '../subworkflows/local/fastq_trim_fastp_fastqc'
 include { PREPARE_REFERENCE_FILES    } from '../subworkflows/local/prepare_reference_files'
 include { BAM_SORT_STATS_SAMTOOLS    } from '../subworkflows/nf-core/bam_sort_stats_samtools/main'
-include { RSV_GENOTYPING             } from '../subworkflows/local/rsv_genotyping'
+include { RSV_WHOLEGENOME_GENOTYPING } from '../subworkflows/local/rsv_genotyping'
+include { RSV_GGENE_GENOTYPING       } from '../subworkflows/local/rsv_ggene_genotyping'
 
 //
 // MODULE: Installed directly from nf-core/modules (possibly with some patches)
@@ -308,7 +309,7 @@ workflow RSVRECON {
     //
     RSV_GGENE_GENOTYPING (
         ch_consensus_fasta,
-        Channel.value(genotype_ggene_ref_fasta.map {[[:], it]}),
+        Channel.value(genotype_ggene_ref_fasta).map {[[:], it]},
         ch_matched_ref_fasta,
         ch_matched_ref_gff
     )

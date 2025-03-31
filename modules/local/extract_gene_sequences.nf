@@ -35,7 +35,7 @@ process EXTRACT_GENE_SEQUENCES {
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         python: \$(python3 --version | sed 's/Python //g')
-        pandas: \$(python3 -c "import Bio; print(Bio.__version__)")
+        biopython: \$(python3 -c "import Bio; print(Bio.__version__)")
     END_VERSIONS
     """
 }

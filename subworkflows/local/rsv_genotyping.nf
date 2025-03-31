@@ -12,7 +12,7 @@ include { PARSE_BLASTN                                } from '../../modules/loca
 include { VISUALIZE_PHYLOGENETIC_TREE                 } from '../../modules/local/visualize_tree/main'
 
 
-workflow RSV_GENOTYPING {
+workflow RSV_WHOLEGENOME_GENOTYPING {
 
     take:
     ch_consensus_fasta       // Channel: [ val(meta), path(fasta) ]
