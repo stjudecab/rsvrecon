@@ -9,11 +9,11 @@ include { CAT_CAT as CAT_FASTA                        } from '../../modules/nf-c
 include { MAFFT_ALIGN                                 } from '../../modules/nf-core/mafft/align/main'
 include { FASTTREE                                    } from '../../modules/nf-core/fasttree/main'
 include { EXTRACT_GENE_SEQUENCES                      } from '../../modules/local/extract_gene_sequences'
-include { PARSE_BLASTN                                } from '../../modules/local/parse_blastn'
+include { PARSE_GGENE_BLASTN                          } from '../../modules/local/parse_ggene_blastn'
 include { VISUALIZE_PHYLOGENETIC_TREE                 } from '../../modules/local/visualize_tree/main'
 
 
-workflow RSV_GENOTYPING {
+workflow RSV_GGENE_GENOTYPING {
 
     take:
     ch_consensus_fasta          // Channel: [ val(meta), path(fasta) ]
@@ -54,6 +54,89 @@ workflow RSV_GENOTYPING {
     )
     ch_blast_out = BLASTN_GENOTYPING.out.txt
     ch_versions  = ch_versions.mix(BLASTN_GENOTYPING.out.versions.first())
+
+    //
+    // Step 3: G-gene Genotyping
+    //
+    PARSE_GGENE_BLASTN ( ch_blast_out )
+    ch_versions = ch_versions.mix(PARSE_GGENE_BLASTN.out.versions.first())
+
+    //
+    // Step 3: Generate tree
+    //
+
+    Channel.of(
+        [
+            "SubtypeA",
+            "AY911262_USA_1956|GA1",
+            file("${projectDir}/vendor/TreeReference/g_gene_representative_ref_A.fasta", type: 'file', checkIfExists: true),
+            file("${projectDir}/vendor/TreeReference/g_gene_representative_ref_A.csv",   type: 'file', checkIfExists: true),
+            file("${projectDir}/vendor/TreeReference/g_gene_color_A.csv",                type: 'file', checkIfExists: true)
+        ],
+        [
+            "SubtypeB",
+            "AY353550_USA_1977|GB1",
+            file("${projectDir}/vendor/TreeReference/g_gene_representative_ref_B.fasta", type: 'file', checkIfExists: true),
+            file("${projectDir}/vendor/TreeReference/g_gene_representative_ref_B.csv",   type: 'file', checkIfExists: true),
+            file("${projectDir}/vendor/TreeReference/g_gene_color_B.csv",                type: 'file', checkIfExists: true)
+        ]
+    )
+    .set { ch_tree_ref_files }
+
+    ch_ggene_consensus_fasta
+        .map { meta, fasta ->
+            [meta.subtype, meta, fasta]
+        }
+        .join ( ch_tree_ref_files, by: [0])
+        .map { subtype, meta, fasta, out_group, ref_fasta, ref_csv, color_csv ->
+            [ meta, fasta, out_group, ref_fasta, ref_csv, color_csv ]
+        }
+        .set { ch_tree_input }
+
+    ch_tree_input
+        .map {
+            [ it[0], [it[1], it[3]] ] // Channel: [ meta, [fasta, ref_fasta] ]
+        }.set{ ch_concat_fasta }
+
+    CAT_FASTA (ch_concat_fasta)
+    ch_versions = ch_versions.mix(CAT_FASTA.out.versions.first())
+
+    // Mafft to perform multiple sequence alignment
+    MAFFT_ALIGN (
+        CAT_FASTA.out.file_out,
+        [[:],[]],
+        [[:],[]],
+        [[:],[]],
+        [[:],[]],
+        [[:],[]],
+        false
+    )
+
+    ch_mafft_fas = MAFFT_ALIGN.out.fas
+    ch_versions = ch_versions.mix(MAFFT_ALIGN.out.versions.first())
+
+    // Fasttree to generate the tree file
+    FASTTREE ( ch_mafft_fas )
+    ch_phylogeny_tree = FASTTREE.out.phylogeny
+    ch_versions = ch_versions.mix(FASTTREE.out.versions.first())
+
+    // Join the tree reference files with the tree file
+    ch_phylogeny_tree
+        .join( ch_tree_input.map {
+            meta, fasta, out_group, ref_fasta, ref_csv, color_csv ->
+                [ meta, out_group, ref_csv, color_csv ]
+            },
+            by: [0]
+        )
+        .map {
+            meta, tree, out_group, ref_csv, color_csv ->
+                [ meta + [strain:out_group], tree, ref_csv, color_csv ]
+        }
+        .set { ch_render_tree }
+
+    // Run the drawing script for generating trees
+    VISUALIZE_PHYLOGENETIC_TREE ( ch_render_tree )
+    ch_versions = ch_versions.mix(VISUALIZE_PHYLOGENETIC_TREE.out.versions.first())
 
     emit:
 
