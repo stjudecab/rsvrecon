@@ -19,7 +19,7 @@ import sys
 import logging
 
 
-def setup_logging():
+def setup_logging(log_file=None):
     """
     Configure logging format and level.
 

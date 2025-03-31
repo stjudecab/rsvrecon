@@ -20,7 +20,7 @@ import sys
 import logging
 
 
-def setup_logging():
+def setup_logging(log_file=None):
     """
     Configure logging format and level.
 
@@ -30,6 +30,10 @@ def setup_logging():
     Returns:
         Configured logger instance
     """
+    handlers = [logging.StreamHandler(sys.stdout)]
+    if log_file:
+        handlers.append(logging.FileHandler(log_file))
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s [%(levelname)s] %(message)s',

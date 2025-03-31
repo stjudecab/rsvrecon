@@ -12,7 +12,7 @@ process PARSE_BLASTN {
     path meta_file
 
     output:
-    tuple val(meta), path("${meta.id}_genotype.txt"), emit: genotype
+    tuple val(meta), path("*.genotype.txt"), emit: genotype
     path "versions.yml", emit: versions
 
     when:
@@ -25,7 +25,7 @@ process PARSE_BLASTN {
     parse_blastn.py \\
         --blast_out ${blastn_out} \\
         --meta_file ${meta_file} \\
-        --output ${prefix}_genotype.txt \\
+        --output ${prefix}.genotype.txt \\
         --seq_id ${meta.id} \\
         --log "${prefix}.log" \\
         $args

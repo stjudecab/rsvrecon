@@ -1,4 +1,4 @@
-process PARSE_BLASTN {
+process PARSE_GGENE_BLASTN {
     tag "$meta.id"
     label 'process_single'
 
@@ -11,7 +11,7 @@ process PARSE_BLASTN {
     tuple val(meta), path(blastn_out)
 
     output:
-    tuple val(meta), path("${meta.id}_ggene_genotype.txt"), emit: genotype
+    tuple val(meta), path("*.ggene_genotype.txt"), emit: genotype
     path "versions.yml", emit: versions
 
     when:
@@ -23,7 +23,7 @@ process PARSE_BLASTN {
     """
     parse_ggene_blastn.py \\
         --blast_out ${blastn_out} \\
-        --output ${prefix}_genotype.txt \\
+        --output ${prefix}.ggene_genotype.txt \\
         --seq_id ${meta.id} \\
         --log "${prefix}.log" \\
         $args
