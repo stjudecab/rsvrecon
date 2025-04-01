@@ -15,9 +15,6 @@ for (param in checkPathParamList) {
     if (param) { file(param, checkIfExists: true) }
 }
 
-// set the igv_cutoff
-def igv_cutoff = param.igv_cutoff ?: 50
-
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -238,7 +235,7 @@ workflow RSVRECON {
     // MODULE: Assemble sequences
     //
     ASSEMBLE_SEQUENCE (
-        ch_base_count.join(ch_matched_ref_fasta, by: [0]), igv_cutoff
+        ch_base_count.join(ch_matched_ref_fasta, by: [0]), params.igv_cutoff
     )
     ch_consensus_fasta = ASSEMBLE_SEQUENCE.out.consensus
     ch_versions = ch_versions.mix(ASSEMBLE_SEQUENCE.out.versions.first())
