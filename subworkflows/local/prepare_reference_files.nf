@@ -123,7 +123,7 @@ workflow PREPARE_REFERENCE_FILES {
         }
     } else {
         GISAID_MKBLASTDB (
-            [ [:], file("${projectDir}/vendor/GISAIDDB/GISAID.fasta.gz", type: 'file', checkIfExists: true) ]
+            [ [id:"GISAID"], file("${projectDir}/vendor/GISAIDDB/GISAID.fasta.gz", type: 'file', checkIfExists: true) ]
         )
         ch_gisaid_blast_db = GISAID_MKBLASTDB.out.db
         ch_versions = ch_versions.mix(GISAID_MKBLASTDB.out.versions)
