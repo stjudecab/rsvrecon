@@ -158,7 +158,7 @@ workflow PREPARE_REFERENCE_FILES {
             }
         } else {
             GUNZIP_GENOTYPE_META (
-                [ [:], file("${projectDir}/vendor/genotype/NextStrain.tsv", type: 'file', checkIfExists: true) ]
+                [ [:], file("${projectDir}/vendor/genotype/NextStrain.tsv.gz", type: 'file', checkIfExists: true) ]
             )
             ch_genotype_whg_ref_meta = GUNZIP_GENOTYPE_META.out.gunzip
             ch_versions = ch_versions.mix(GUNZIP_GENOTYPE_META.out.versions)
@@ -168,14 +168,14 @@ workflow PREPARE_REFERENCE_FILES {
     //
     // Prepare the reference(db) files for g-gene genotyping
     //
-    ch_genotyep_gg_ref_fasta = Channel.empty()
+    ch_genotype_gg_ref_fasta = Channel.empty()
     if (!params.skip_genotyping && !params.skip_ggene_genotyping) {
         if (params.genotype_ggene_fasta) {
-            ch_genotyep_gg_ref_fasta = Channel.value(
+            ch_genotype_gg_ref_fasta = Channel.value(
                 file(params.genotype_ggene_fasta, type: 'file', checkIfExists: true)
             ).map { [[:], it] }
         } else {
-            ch_genotyep_gg_ref_fasta = Channel.value(
+            ch_genotype_gg_ref_fasta = Channel.value(
                 file("${projectDir}/vendor/genotype/G_subtype.fasta.gz", type: 'file', checkIfExists: true)
             ).map { [[:], it] }
         }

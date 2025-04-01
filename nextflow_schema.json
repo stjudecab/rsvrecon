@@ -113,12 +113,12 @@
                     "description": "Path to whole genome genotyping FASTA file.",
                     "fa_icon": "far fa-file-code"
                 },
-                "genotyep_whole_genome_meta": {
+                "genotype_whole_genome_meta": {
                     "type": "string",
                     "format": "file-path",
                     "fa_icon": "far fa-file-code",
                     "description": "Path to whole genome genotyping meta file.",
-                    "pattern": "^\\S+\\.csv"
+                    "pattern": "^\\S+\\.csv(\\.gz)?$"
                 },
                 "genotype_ggene_fasta": {
                     "type": "string",
@@ -177,7 +177,7 @@
                 },
                 "igv_cutoff": {
                     "type": "integer",
-                    "default": 50
+                    "default": 50,
                     "fa_icon": "fas fa-ruler-horizontal",
                     "description": "Igv-count cut-off threshold."
                 }

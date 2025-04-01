@@ -50,7 +50,9 @@ include { PREPARE_REFERENCE_FILES    } from '../subworkflows/local/prepare_refer
 include { BAM_SORT_STATS_SAMTOOLS    } from '../subworkflows/nf-core/bam_sort_stats_samtools/main'
 include { RSV_WHOLEGENOME_GENOTYPING } from '../subworkflows/local/rsv_genotyping'
 include { RSV_GGENE_GENOTYPING       } from '../subworkflows/local/rsv_ggene_genotyping'
-include { PHYLOGENY_TREE_GENERATION  } from '../subworkflows/local/phylogeny_tree_generation'
+include {
+    PHYLOGENY_TREE_GENERATION as PHY_WHG_TREE;
+    PHYLOGENY_TREE_GENERATION as PHY_GGENE_TREE } from '../subworkflows/local/phylogeny_tree_generation'
 
 //
 // MODULE: Installed directly from nf-core/modules (possibly with some patches)
@@ -285,10 +287,8 @@ workflow RSVRECON {
             // Generate the whole genome phylogenetic tree
             ch_tree_whg_ref = PREPARE_REFERENCE_FILES.out.tree_whg_ref
 
-            PHYLOGENY_TREE_GENERATION (
-                ch_consensus_fasta, ch_tree_whg_ref
-            )
-            ch_versions = ch_versions.mix(PHYLOGENY_TREE_GENERATION.out.versions)
+            PHY_WHG_TREE ( ch_consensus_fasta, ch_tree_whg_ref )
+            ch_versions = ch_versions.mix(PHY_WHG_TREE.out.versions)
         }
 
         if (!params.skip_ggene_genotyping) {
@@ -307,10 +307,10 @@ workflow RSVRECON {
             // Generate the ggene phylogenetic tree
             ch_tree_gg_ref = PREPARE_REFERENCE_FILES.out.tree_gg_ref
 
-            PHYLOGENY_TREE_GENERATION (
+            PHY_GGENE_TREE (
                 RSV_GGENE_GENOTYPING.out.ggene_consensus_fasta, ch_tree_gg_ref
             )
-            ch_versions = ch_versions.mix(PHYLOGENY_TREE_GENERATION.out.versions)
+            ch_versions = ch_versions.mix(PHY_GGENE_TREE.out.versions)
         }
     }
 

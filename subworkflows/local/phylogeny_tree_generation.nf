@@ -24,7 +24,7 @@ workflow PHYLOGENY_TREE_GENERATION {
         }
         .join ( ch_tree_ref_files, by: [0])
         .map { subtype, meta, query_fasta, out_grp, ref_fasta, ref_meta, color ->
-            [ meta, fasta, out_grp, ref_fasta, ref_meta, color ]
+            [ meta, query_fasta, out_grp, ref_fasta, ref_meta, color ]
         }
         .set { ch_phy_tree_input }
 
@@ -36,7 +36,7 @@ workflow PHYLOGENY_TREE_GENERATION {
     //
     // MODULE: Concat query and reference fasta together
     //
-    CAT_FASTA (ch_concat_fasta)
+    CAT_FASTA ( ch_tree_fasta )
     ch_concat_fasta = CAT_FASTA.out.file_out
     ch_versions     = ch_versions.mix(CAT_FASTA.out.versions.first())
 
