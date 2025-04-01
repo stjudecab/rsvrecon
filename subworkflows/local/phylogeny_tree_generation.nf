@@ -8,7 +8,7 @@ include { FASTTREE                    } from '../../modules/nf-core/fasttree/mai
 include { VISUALIZE_PHYLOGENETIC_TREE } from '../../modules/local/visualize_tree/main'
 
 
-workflow PHYLOGENY_TREE GENERATION {
+workflow PHYLOGENY_TREE_GENERATION {
 
     take:
     ch_query_fasta    // Channel: [ val(meta), path(fasta) ]
