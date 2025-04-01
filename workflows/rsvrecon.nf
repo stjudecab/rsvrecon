@@ -6,45 +6,17 @@
 
 // Check input path parameters
 def checkPathParamList = [
-    params.fasta, params.kma_index,
-    params.rsv_gff, params.rsv_meta_file, params.blast_db,
-    params.genotype_fasta, params.genotype_meta_file
+    params.rsv_fasta_pool, params.rsv_gff_pool, params.rsv_meta_pool,
+    params.kma_index, params.blast_gisaid_db,
+    params.genotype_whole_genome_fasta, params.genotype_whole_genome_meta, params.genotype_ggene_fasta
 ]
 
 for (param in checkPathParamList) {
     if (param) { file(param, checkIfExists: true) }
 }
 
-
-if (params.rsv_gff) {
-    rsv_gff = file(params.rsv_gff, type: 'file', checkIfExists: true)
-} else {
-    rsv_gff = file("${projectDir}/vendor/RSV.gff", type: 'file', checkIfExists: true)
-}
-
-if (params.rsv_meta_file) {
-    rsv_meta = file(params.rsv_meta_file, type: 'file', checkIfExists: true)
-} else {
-    rsv_meta = file("${projectDir}/vendor/RSV.csv", type: 'file', checkIfExists: true)
-}
-
-if (params.genotype_fasta) {
-    genotype_ref_fasta = file(params.genotype_fasta, type: 'file', checkIfExists: true)
-} else {
-    genotype_ref_fasta = file("${projectDir}/vendor/genotype/NextStrain.fasta.gz", type: 'file', checkIfExists: true)
-}
-
-if (params.genotype_meta_file) {
-    genotype_ref_meta  = file(params.genotype_meta_file, type: 'file', checkIfExists: true)
-} else {
-    genotype_ref_meta  = file("${projectDir}/vendor/genotype/NextStrain.tsv", type: 'file', checkIfExists: true)
-}
-
-if (params.ggene_genotype_fasta) {
-    genotype_ggene_ref_fasta = file(params.genotype_ggene_fasta, type: 'file', checkIfExists: true)
-} else {
-    genotype_ggene_ref_fasta = file("${projectDir}/vendor/genotype/G_subtype.fasta.gz", type: 'file', checkIfExists: true)
-}
+// set the igv_cutoff
+def igv_cutoff = param.igv_cutoff ?: 50
 
 
 /*
@@ -68,10 +40,10 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 //
 // MODULE: Loaded from modules/local/
 //
-include { KMA_MAP                    } from '../modules/local/kma_map'
-include { READ_KMA                   } from '../modules/local/read_kma'
-include { IGVTOOLS_COUNT             } from '../modules/local/igvtools_count'
-include { ASSEMBLE_SEQUENCE          } from '../modules/local/assemble_sequence'
+include { KMA_MAP           } from '../modules/local/kma_map'
+include { READ_KMA          } from '../modules/local/read_kma'
+include { IGVTOOLS_COUNT    } from '../modules/local/igvtools_count'
+include { ASSEMBLE_SEQUENCE } from '../modules/local/assemble_sequence'
 
 //
 // SUBWORKFLOW: Consisting a mix of local and nf-core/modules
@@ -81,6 +53,7 @@ include { PREPARE_REFERENCE_FILES    } from '../subworkflows/local/prepare_refer
 include { BAM_SORT_STATS_SAMTOOLS    } from '../subworkflows/nf-core/bam_sort_stats_samtools/main'
 include { RSV_WHOLEGENOME_GENOTYPING } from '../subworkflows/local/rsv_genotyping'
 include { RSV_GGENE_GENOTYPING       } from '../subworkflows/local/rsv_ggene_genotyping'
+include { PHYLOGENY_TREE_GENERATION  } from '../subworkflows/local/phylogeny_tree_generation'
 
 //
 // MODULE: Installed directly from nf-core/modules (possibly with some patches)
@@ -121,6 +94,19 @@ workflow RSVRECON {
     // init version and multiqc channel
     ch_versions = Channel.empty()
     ch_multiqc_report = Channel.empty()
+
+    //
+    // SUBWORKFLOW: Uncompress and prepare reference data files used by the pipeline
+    //
+    PREPARE_REFERENCE_FILES ()
+
+    ch_rsv_fasta_pool  = PREPARE_REFERENCE_FILES.out.rsv_fasta_pool
+    ch_rsv_gff_pool    = PREPARE_REFERENCE_FILES.out.rsv_gff_pool
+    ch_rsv_meta_pool   = PREPARE_REFERENCE_FILES.out.rsv_meta_pool
+    ch_kma_index       = PREPARE_REFERENCE_FILES.out.kma_index
+    ch_gisaid_blast_db = PREPARE_REFERENCE_FILES.out.gisaid_blast_db
+
+    ch_versions = ch_versions.mix( PREPARE_REFERENCE_FILES.out.versions )
 
     // group multiple fastq files from the same sample
     ch_samplesheet
@@ -168,19 +154,9 @@ workflow RSVRECON {
     ch_fail_reads_multiqc     = FASTQ_TRIM_FASTP_FASTQC.out.fail_reads_multiqc
 
     //
-    // SUBWORKFLOW: Prepare reference genomes
+    // MODULE: Run KMA for identifying best matched RSV genome from the pool
     //
-    PREPARE_REFERENCE_FILES ( params.fasta )
-
-    fasta = PREPARE_REFERENCE_FILES.out.fasta
-    kma_index = PREPARE_REFERENCE_FILES.out.kma_index
-
-    ch_versions = ch_versions.mix( PREPARE_REFERENCE_FILES.out.versions )
-
-    //
-    // MODULE: Alignment with KMA for identifying best
-    //
-    KMA_MAP ( ch_trimmed_fastq, kma_index.map{ it[1] } )
+    KMA_MAP ( ch_trimmed_fastq, ch_kma_index.map{ it[1] } )
     ch_kma_map_res = KMA_MAP.out.res
     ch_versions = ch_versions.mix(KMA_MAP.out.versions.first())
 
@@ -189,10 +165,10 @@ workflow RSVRECON {
     //
     READ_KMA (
         ch_kma_map_res,
-        fasta.map { it[1] },
-        rsv_gff,
-        rsv_meta)
-
+        ch_rsv_fasta_pool.map { it[1] },
+        ch_rsv_gff_pool.map { it[1] },
+        ch_rsv_meta_pool.map { it[1] }
+    )
     ch_versions = ch_versions.mix(READ_KMA.out.versions.first())
 
     // move env vars to meta
@@ -262,23 +238,19 @@ workflow RSVRECON {
     // MODULE: Assemble sequences
     //
     ASSEMBLE_SEQUENCE (
-        ch_base_count.join(ch_matched_ref_fasta, by: [0]),
-        params.igv_cutoff ?: 50
+        ch_base_count.join(ch_matched_ref_fasta, by: [0]), igv_cutoff
     )
     ch_consensus_fasta = ASSEMBLE_SEQUENCE.out.consensus
     ch_versions = ch_versions.mix(ASSEMBLE_SEQUENCE.out.versions.first())
 
     //
-    // MODULE: BlastGISAID
+    // MODULE: BLAST against the GISAID Database
     //
-    BLAST_GISAID (
-        ch_consensus_fasta,
-        [[:], file(params.blast_db, type: 'dir', checkIfExists: true)]
-    )
+    BLAST_GISAID ( ch_consensus_fasta, ch_gisaid_blast_db )
     ch_versions = ch_versions.mix(BLAST_GISAID.out.versions.first())
 
     //
-    // MODULE: Next Clade
+    // MODULE: NextClade to call the variants
     //
 
     // Get the NextClade RSV dataset based on ref_id
@@ -295,25 +267,55 @@ workflow RSVRECON {
     ch_versions = ch_versions.mix(NEXTCLADE_RUN.out.versions.first())
 
     //
-    // SUBWORKFLOW: Genotyping with the whole genome
+    // SUBWORKFLOW: Genotyping the assembled genome
     //
-    RSV_WHOLEGENOME_GENOTYPING (
-        ch_consensus_fasta,
-        Channel.value(genotype_ref_fasta).map {[[:], it]},
-        Channel.value(genotype_ref_meta).map {[[:], it]}
-    )
-    ch_versions = ch_versions.mix(RSV_WHOLEGENOME_GENOTYPING.out.versions)
+    if (!params.skip_genotyping) {
 
-    //
-    // SUBWORKFLOW: Genotyping with the G-gene only
-    //
-    RSV_GGENE_GENOTYPING (
-        ch_consensus_fasta,
-        Channel.value(genotype_ggene_ref_fasta).map {[[:], it]},
-        ch_matched_ref_fasta,
-        ch_matched_ref_gff
-    )
-    ch_versions = ch_versions.mix(RSV_GGENE_GENOTYPING.out.versions)
+        // MODULE: Genotyping with the whole genome
+        if (!params.skip_wholegenome_genotyping) {
+
+            ch_genotype_whg_ref_fasta = PREPARE_REFERENCE_FILES.out.genotype_whg_ref_fasta
+            ch_genotype_whg_ref_meta  = PREPARE_REFERENCE_FILES.out.genotype_whg_ref_meta
+
+            // MODULE: Genotyping with the whole genome
+            RSV_WHOLEGENOME_GENOTYPING (
+                ch_consensus_fasta,
+                ch_genotype_whg_ref_fasta,
+                ch_genotype_whg_ref_meta
+            )
+            ch_versions = ch_versions.mix(RSV_WHOLEGENOME_GENOTYPING.out.versions)
+
+            // Generate the whole genome phylogenetic tree
+            ch_tree_whg_ref = PREPARE_REFERENCE_FILES.out.tree_whg_ref
+
+            PHYLOGENY_TREE_GENERATION (
+                ch_consensus_fasta, ch_tree_whg_ref
+            )
+            ch_versions = ch_versions.mix(PHYLOGENY_TREE_GENERATION.out.versions)
+        }
+
+        if (!params.skip_ggene_genotyping) {
+
+            ch_genotype_gg_ref_fasta = PREPARE_REFERENCE_FILES.out.genotype_gg_ref_fasta
+
+            // MODULE: Genotyping with the G-gene only
+            RSV_GGENE_GENOTYPING (
+                ch_consensus_fasta,
+                ch_genotype_gg_ref_fasta,
+                ch_matched_ref_fasta,
+                ch_matched_ref_gff
+            )
+            ch_versions = ch_versions.mix(RSV_GGENE_GENOTYPING.out.versions)
+
+            // Generate the ggene phylogenetic tree
+            ch_tree_gg_ref = PREPARE_REFERENCE_FILES.out.tree_gg_ref
+
+            PHYLOGENY_TREE_GENERATION (
+                RSV_GGENE_GENOTYPING.out.ggene_consensus_fasta, ch_tree_gg_ref
+            )
+            ch_versions = ch_versions.mix(PHYLOGENY_TREE_GENERATION.out.versions)
+        }
+    }
 
     //
     // Collate and save software versions
