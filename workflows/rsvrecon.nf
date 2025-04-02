@@ -273,13 +273,13 @@ workflow RSVRECON {
         // MODULE: Genotyping with the whole genome
         if (!params.skip_wholegenome_genotyping) {
 
-            ch_genotype_whg_ref_fasta = PREPARE_REFERENCE_FILES.out.genotype_whg_ref_fasta
-            ch_genotype_whg_ref_meta  = PREPARE_REFERENCE_FILES.out.genotype_whg_ref_meta
+            ch_genotype_whg_blast_db = PREPARE_REFERENCE_FILES.out.genotype_whg_blast_db
+            ch_genotype_whg_ref_meta = PREPARE_REFERENCE_FILES.out.genotype_whg_ref_meta
 
             // MODULE: Genotyping with the whole genome
             RSV_WHOLEGENOME_GENOTYPING (
                 ch_consensus_fasta,
-                ch_genotype_whg_ref_fasta,
+                ch_genotype_whg_blast_db,
                 ch_genotype_whg_ref_meta
             )
             ch_versions = ch_versions.mix(RSV_WHOLEGENOME_GENOTYPING.out.versions)
@@ -293,12 +293,12 @@ workflow RSVRECON {
 
         if (!params.skip_ggene_genotyping) {
 
-            ch_genotype_gg_ref_fasta = PREPARE_REFERENCE_FILES.out.genotype_gg_ref_fasta
+            ch_genotype_gg_blast_db = PREPARE_REFERENCE_FILES.out.genotype_gg_blast_db
 
             // MODULE: Genotyping with the G-gene only
             RSV_GGENE_GENOTYPING (
                 ch_consensus_fasta,
-                ch_genotype_gg_ref_fasta,
+                ch_genotype_gg_blast_db,
                 ch_matched_ref_fasta,
                 ch_matched_ref_gff
             )
