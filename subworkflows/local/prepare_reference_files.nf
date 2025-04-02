@@ -2,15 +2,17 @@
 // Uncompress and prepare reference genome files
 //
 
-include { GUNZIP as GUNZIP_FASTA                } from '../../modules/nf-core/gunzip/main'
-include { GUNZIP as GUNZIP_GFF                  } from '../../modules/nf-core/gunzip/main'
-include { GUNZIP as GUNZIP_META                 } from '../../modules/nf-core/gunzip/main'
-include { GUNZIP as GUNZIP_GENOTYPE_META        } from '../../modules/nf-core/gunzip/main'
-include { UNTAR as UNTAR_KMA_INDEX              } from '../../modules/nf-core/untar/main'
-include { UNTAR as UNTAR_GISAID_DB              } from '../../modules/nf-core/untar/main'
-include { CUSTOM_GETCHROMSIZES                  } from '../../modules/nf-core/custom/getchromsizes/main'
-include { KMA_INDEX                             } from '../../modules/nf-core/kma/index/main'
-include { BLAST_MAKEBLASTDB as GISAID_MKBLASTDB } from '../../modules/nf-core/blast/makeblastdb/main'
+include { GUNZIP as GUNZIP_FASTA                  } from '../../modules/nf-core/gunzip/main'
+include { GUNZIP as GUNZIP_GFF                    } from '../../modules/nf-core/gunzip/main'
+include { GUNZIP as GUNZIP_META                   } from '../../modules/nf-core/gunzip/main'
+include { GUNZIP as GUNZIP_GENOTYPE_META          } from '../../modules/nf-core/gunzip/main'
+include { UNTAR as UNTAR_KMA_INDEX                } from '../../modules/nf-core/untar/main'
+include { UNTAR as UNTAR_GISAID_DB                } from '../../modules/nf-core/untar/main'
+include { CUSTOM_GETCHROMSIZES                    } from '../../modules/nf-core/custom/getchromsizes/main'
+include { KMA_INDEX                               } from '../../modules/nf-core/kma/index/main'
+include { BLAST_MAKEBLASTDB as GISAID_MAKEBLASTDB } from '../../modules/nf-core/blast/makeblastdb/main'
+include { BLAST_MAKEBLASTDB as WHG_MAKEBLASTDB    } from '../../modules/nf-core/blast/makeblastdb/main'
+include { BLAST_MAKEBLASTDB as GGENE_MAKEBLASTDB  } from '../../modules/nf-core/blast/makeblastdb/main'
 
 
 workflow PREPARE_REFERENCE_FILES {
@@ -122,17 +124,18 @@ workflow PREPARE_REFERENCE_FILES {
             ch_gisaid_blast_db = Channel.value( file(params.gisaid_blast_db, type: 'dir') ).map{ [[:], it] }
         }
     } else {
-        GISAID_MKBLASTDB (
+        GISAID_MAKEBLASTDB (
             [ [id:"GISAID"], file("${projectDir}/vendor/GISAIDDB/GISAID.fasta.gz", type: 'file', checkIfExists: true) ]
         )
-        ch_gisaid_blast_db = GISAID_MKBLASTDB.out.db
-        ch_versions = ch_versions.mix(GISAID_MKBLASTDB.out.versions)
+        ch_gisaid_blast_db = GISAID_MAKEBLASTDB.out.db
+        ch_versions = ch_versions.mix(GISAID_MAKEBLASTDB.out.versions)
     }
 
     //
     // Prepare the reference(db) files for wholegenome genotyping
     //
-    ch_genotype_whg_ref_fasta = Channel.empty()
+    ch_genotype_whg_blast_db = Channel.empty()
+    ch_genotype_whg_ref_meta = Channel.empty()
     if (!params.skip_genotyping && !params.skip_wholegenome_genotyping) {
         if (params.genotype_whole_genome_fasta) {
             ch_genotype_whg_ref_fasta = Channel.value(
@@ -143,6 +146,13 @@ workflow PREPARE_REFERENCE_FILES {
                 file("${projectDir}/vendor/genotype/NextStrain.fasta.gz", type: 'file', checkIfExists: true)
             ).map { [[:], it] }
         }
+
+        WHG_MAKEBLASTDB (
+            ch_genotype_whg_ref_fasta
+                .map { meta, fasta -> [ meta + [id:"RSV_AB"], fasta ] }
+        )
+        ch_genotype_whg_blast_db = WHG_MAKEBLASTDB.out.db
+        ch_versions = ch_versions.mix(WHG_MAKEBLASTDB.out.versions)
 
         if (params.genotype_whole_genome_meta) {
             if (params.genotype_whole_genome_meta.endsWith('.gz')) {
@@ -168,7 +178,7 @@ workflow PREPARE_REFERENCE_FILES {
     //
     // Prepare the reference(db) files for g-gene genotyping
     //
-    ch_genotype_gg_ref_fasta = Channel.empty()
+    ch_genotype_gg_blast_db = Channel.empty()
     if (!params.skip_genotyping && !params.skip_ggene_genotyping) {
         if (params.genotype_ggene_fasta) {
             ch_genotype_gg_ref_fasta = Channel.value(
@@ -179,6 +189,13 @@ workflow PREPARE_REFERENCE_FILES {
                 file("${projectDir}/vendor/genotype/G_subtype.fasta.gz", type: 'file', checkIfExists: true)
             ).map { [[:], it] }
         }
+
+        GGENE_MAKEBLASTDB (
+            ch_genotype_gg_ref_fasta.map {
+                meta, fasta -> [ meta + [id:"RSV_GGENE"], fasta] }
+        )
+        ch_genotype_gg_blast_db = GGENE_MAKEBLASTDB.out.db
+        ch_versions = ch_versions.mix(GGENE_MAKEBLASTDB.out.versions)
     }
 
     //
@@ -231,9 +248,9 @@ workflow PREPARE_REFERENCE_FILES {
     gisaid_blast_db         = ch_gisaid_blast_db // tuple: [ val(meta), path(db)    ]
 
     // genotyping reference files
-    genotype_whg_ref_fasta  = ch_genotype_whg_ref_fasta // tuple: [ val(meta), path(fasta) ]
-    genotype_whg_ref_meta   = ch_genotype_whg_ref_meta  // tuple: [ val(meta), path(tsv)   ]
-    genotype_gg_ref_fasta   = ch_genotype_gg_ref_fasta  // tuple: [ val(meta), path(fasta) ]
+    genotype_whg_blast_db   = ch_genotype_whg_blast_db // tuple: [ val(meta), path(db)  ]
+    genotype_whg_ref_meta   = ch_genotype_whg_ref_meta // tuple: [ val(meta), path(tsv) ]
+    genetype_gg_blast_db    = ch_genotype_gg_blast_db  // tuple: [ val(meta), path(db)  ]
 
     // Phylogenetic tree generation files
     tree_whg_ref            = ch_tree_whg_ref // Channel: [ val(subtype), val(out_grp), path(ref_fasta), path(ref_meta), path(color) ]
