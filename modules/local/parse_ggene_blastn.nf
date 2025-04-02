@@ -12,6 +12,7 @@ process PARSE_GGENE_BLASTN {
 
     output:
     tuple val(meta), path("*.ggene_genotype.txt"), emit: genotype
+    tuple val(meta), path("*.log")               , emit: log
     path "versions.yml", emit: versions
 
     when:

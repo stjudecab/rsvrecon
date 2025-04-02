@@ -13,6 +13,7 @@ process EXTRACT_GENE_SEQUENCES {
 
     output:
     tuple val(meta), path("*.fasta"), emit: fasta
+    tuple val(meta), path("*.log")  , emit: log
     path "versions.yml"             , emit: versions
 
     when:
