@@ -16,8 +16,8 @@ workflow RSV_WHOLEGENOME_GENOTYPING {
 
     take:
     ch_consensus_fasta       // Channel: [ val(meta), path(fasta) ]
-    ch_genotyping_blast_ref  // path/to/RSV_AB.fasta
-    ch_genotyping_blast_meta // path/to/RSV_AB_meta.txt
+    ch_genotyping_whg_blast_db   // Channel: [ val(meta), path(db)    ]
+    ch_genotyping_whg_blast_meta // Channel: [ val(meta), path(csv)   ]
 
     main:
 
@@ -26,17 +26,18 @@ workflow RSV_WHOLEGENOME_GENOTYPING {
     //
     // Step 1: Run BLAST against reference database for genotyping
     //
-    GENOTYPING_MAKEBLASTDB (
-        ch_genotyping_blast_ref.map {
-            meta, fasta ->
-                [ meta + [id:"RSV_AB"], fasta ]
-        }
-    )
-    ch_versions = ch_versions.mix(GENOTYPING_MAKEBLASTDB.out.versions)
+    // GENOTYPING_MAKEBLASTDB (
+    //     ch_genotyping_blast_ref.map {
+    //         meta, fasta ->
+    //             [ meta + [id:"RSV_AB"], fasta ]
+    //     }
+    // )
+    // ch_versions = ch_versions.mix(GENOTYPING_MAKEBLASTDB.out.versions)
 
     BLASTN_GENOTYPING (
         ch_consensus_fasta,
-        GENOTYPING_MAKEBLASTDB.out.db
+        ch_genotyping_whg_blast_db
+        // GENOTYPING_MAKEBLASTDB.out.db
     )
     ch_blast_out = BLASTN_GENOTYPING.out.txt
     ch_versions  = ch_versions.mix(BLASTN_GENOTYPING.out.versions.first())
@@ -44,10 +45,10 @@ workflow RSV_WHOLEGENOME_GENOTYPING {
     //
     // Step 2: Select appropriate
     //
-    PARSE_BLASTN ( ch_blast_out, ch_genotyping_blast_meta.map{ it[1] } )
+    PARSE_BLASTN ( ch_blast_out, ch_genotyping_whg_blast_meta.map{ it[1] } )
     ch_versions = ch_versions.mix(PARSE_BLASTN.out.versions.first())
 
-
     emit:
+
     versions = ch_versions
 }

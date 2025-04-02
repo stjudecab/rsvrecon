@@ -16,10 +16,10 @@ include { VISUALIZE_PHYLOGENETIC_TREE                 } from '../../modules/loca
 workflow RSV_GGENE_GENOTYPING {
 
     take:
-    ch_consensus_fasta          // Channel: [ val(meta), path(fasta) ]
-    ch_genotype_ggene_ref_fasta
-    ch_matched_ref_fasta
-    ch_matched_ref_gff
+    ch_consensus_fasta         // Channel: [ val(meta), path(fasta) ]
+    ch_genotyping_gg_blast_db  // Channel: [ val(meta), path(db)    ]
+    ch_matched_ref_fasta       // Channel: [ val(meta), path(fasta) ]
+    ch_matched_ref_gff         // Channel: [ val(meta), path(gff)   ]
 
     main:
 
@@ -40,17 +40,18 @@ workflow RSV_GGENE_GENOTYPING {
     //
     // Step 2: Run BLAST against reference database for genotyping
     //
-    GENOTYPING_MAKEBLASTDB (
-        ch_genotype_ggene_ref_fasta.map {
-            meta, fasta ->
-                [ meta + [id:"RSV_GGENE"], fasta ]
-        }
-    )
-    ch_versions = ch_versions.mix(GENOTYPING_MAKEBLASTDB.out.versions)
+    // GENOTYPING_MAKEBLASTDB (
+    //     ch_genotype_ggene_ref_fasta.map {
+    //         meta, fasta ->
+    //             [ meta + [id:"RSV_GGENE"], fasta ]
+    //     }
+    // )
+    // ch_versions = ch_versions.mix(GENOTYPING_MAKEBLASTDB.out.versions)
 
     BLASTN_GENOTYPING (
         ch_ggene_consensus_fasta,
-        GENOTYPING_MAKEBLASTDB.out.db
+        ch_genotyping_gg_blast_db
+        // GENOTYPING_MAKEBLASTDB.out.db
     )
     ch_blast_out = BLASTN_GENOTYPING.out.txt
     ch_versions  = ch_versions.mix(BLASTN_GENOTYPING.out.versions.first())
@@ -60,7 +61,6 @@ workflow RSV_GGENE_GENOTYPING {
     //
     PARSE_GGENE_BLASTN ( ch_blast_out )
     ch_versions = ch_versions.mix(PARSE_GGENE_BLASTN.out.versions.first())
-
 
     emit:
 
