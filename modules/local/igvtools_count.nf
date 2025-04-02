@@ -22,6 +22,9 @@ process IGVTOOLS_COUNT {
     def prefix = task.ext.prefix ?: "${meta.id}"
 
     """
+    export LC_ALL=C
+    export _JAVA_OPTIONS="-Duser.home=\$(pwd)"
+
     igvtools count \\
         $args \\
         --bases $bam \\
