@@ -14,6 +14,7 @@ include { samplesheetToList         } from 'plugin/nf-schema'
 include { completionEmail           } from '../../nf-core/utils_nfcore_pipeline'
 include { completionSummary         } from '../../nf-core/utils_nfcore_pipeline'
 include { imNotification            } from '../../nf-core/utils_nfcore_pipeline'
+include { StJudeCabLogo             } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NFCORE_PIPELINE     } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NEXTFLOW_PIPELINE   } from '../../nf-core/utils_nextflow_pipeline'
 include { INPUT_CHECK               } from '../../local/input_check'
@@ -37,6 +38,11 @@ workflow PIPELINE_INITIALISATION {
     main:
 
     ch_versions = Channel.empty()
+
+    //
+    // Print the logo first
+    //
+    log.info StJudeCabLogo(monochrome_logs=false)
 
     //
     // Print version and exit if required and dump pipeline parameters to JSON file
