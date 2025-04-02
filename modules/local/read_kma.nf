@@ -16,7 +16,8 @@ process READ_KMA {
     output:
     tuple val(meta), path("*.fasta"), env(REF_SUBTYPE), emit: fasta
     tuple val(meta), path("*.gff"),   env(REF_SUBTYPE), emit: gff
-    path "versions.yml"                               , emit: versions
+    tuple val(meta), path("*.var")                    , emit: annotation
+    path "versions.yml"                               , emit: version
 
     when:
     task.ext.when == null || task.ext.when
