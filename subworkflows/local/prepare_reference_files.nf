@@ -250,7 +250,7 @@ workflow PREPARE_REFERENCE_FILES {
     // genotyping reference files
     genotype_whg_blast_db   = ch_genotype_whg_blast_db // tuple: [ val(meta), path(db)  ]
     genotype_whg_ref_meta   = ch_genotype_whg_ref_meta // tuple: [ val(meta), path(tsv) ]
-    genetype_gg_blast_db    = ch_genotype_gg_blast_db  // tuple: [ val(meta), path(db)  ]
+    genotype_gg_blast_db    = ch_genotype_gg_blast_db  // tuple: [ val(meta), path(db)  ]
 
     // Phylogenetic tree generation files
     tree_whg_ref            = ch_tree_whg_ref // Channel: [ val(subtype), val(out_grp), path(ref_fasta), path(ref_meta), path(color) ]
