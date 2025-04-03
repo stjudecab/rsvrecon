@@ -22,7 +22,7 @@ workflow PHYLOGENY_TREE_GENERATION {
         .map { meta, fasta ->
             [meta.subtype, meta, fasta]
         }
-        .join ( ch_tree_ref_files, by: [0])
+        .combine ( ch_tree_ref_files, by: [0] )
         .map { subtype, meta, query_fasta, out_grp, ref_fasta, ref_meta, color ->
             [ meta, query_fasta, out_grp, ref_fasta, ref_meta, color ]
         }
