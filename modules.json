@@ -33,13 +33,6 @@
                             "modules"
                         ]
                     },
-                    "custom/getchromsizes": {
-                        "branch": "master",
-                        "git_sha": "81880787133db07d9b4c1febd152c090eb8325dc",
-                        "installed_by": [
-                            "modules"
-                        ]
-                    },
                     "fastp": {
                         "branch": "master",
                         "git_sha": "df6f67c19f76671b42ffa395cd2fde8958111eba",
