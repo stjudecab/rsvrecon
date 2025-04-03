@@ -8,7 +8,6 @@ include { GUNZIP as GUNZIP_META                   } from '../../modules/nf-core/
 include { GUNZIP as GUNZIP_GENOTYPE_META          } from '../../modules/nf-core/gunzip/main'
 include { UNTAR as UNTAR_KMA_INDEX                } from '../../modules/nf-core/untar/main'
 include { UNTAR as UNTAR_GISAID_DB                } from '../../modules/nf-core/untar/main'
-include { CUSTOM_GETCHROMSIZES                    } from '../../modules/nf-core/custom/getchromsizes/main'
 include { KMA_INDEX                               } from '../../modules/nf-core/kma/index/main'
 include { BLAST_MAKEBLASTDB as GISAID_MAKEBLASTDB } from '../../modules/nf-core/blast/makeblastdb/main'
 include { BLAST_MAKEBLASTDB as WHG_MAKEBLASTDB    } from '../../modules/nf-core/blast/makeblastdb/main'
