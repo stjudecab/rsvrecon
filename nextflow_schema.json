@@ -103,7 +103,7 @@
                     "type": "string",
                     "format": "path",
                     "fa_icon": "far fa-file-code",
-                    "description": "Path to the GISAID BLAST Database",
+                    "description": "Path to the GISAID BLAST Database"
                 },
                 "genotype_whole_genome_fasta": {
                     "type": "string",
@@ -189,7 +189,7 @@
                 "save_unaligned": {
                     "type": "boolean",
                     "fa_icon": "fas fa-save",
-                    "description": "Where possible, save unaligned reads from STAR to the results directory.",
+                    "description": "Where possible, save unaligned reads from STAR to the results directory."
                 }
             },
             "fa_icon": "fas fa-dna"
