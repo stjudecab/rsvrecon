@@ -360,7 +360,7 @@ workflow RSVRECON {
         ch_multiqc_finalqc_files = Channel.empty()
         ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_workflow_summary.collectFile(name: 'workflow_summary_mqc.yaml'))
         ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_collated_versions)
-        ch_multiqc_rawqc_files = ch_multiqc_rawqc_files.mix(ch_methods_description_file)
+        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_methods_description_file)
 
         // post-trim qc files
         ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_fastqc_multiqc_postrim.collect().ifEmpty([]))
