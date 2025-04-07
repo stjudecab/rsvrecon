@@ -10,16 +10,16 @@
 
 # Load required libraries
 suppressPackageStartupMessages({
-  library(ggtree)
-  library(treeio)
-  library(ggplot2)
+    library(ggtree)
+    library(treeio)
+    library(ggplot2)
 })
 
 # read parameters
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) < 5) {
-  stop("Usage: Rscript tree_visualization.R <tree_file> <outgroup_strain> <annotation_file> <output_figure> <color_file>")
+    stop("Usage: Rscript tree_visualization.R <tree_file> <outgroup_strain> <annotation_file> <output_figure> <color_file>")
 }
 
 tree_file <- args[1]
@@ -38,11 +38,11 @@ message(paste("Color file:", color_file))
 
 # Read input data
 tryCatch({
-  tree <- read.newick(tree_file)
-  strain_data <- read.csv(anno_file, header = FALSE)
-  color_scheme <- read.csv(color_file, header = FALSE)
+    tree <- read.newick(tree_file)
+    strain_data <- read.csv(anno_file, header = FALSE)
+    color_scheme <- read.csv(color_file, header = FALSE)
 }, error = function(e) {
-  stop(paste("Error reading input files:", e$message))
+    stop(paste("Error reading input files:", e$message))
 })
 
 # Process annotation data
@@ -64,34 +64,34 @@ max_x <- max(node_data$x)
 
 # Configure plot aesthetics
 p <- p +
-  geom_tiplab(size = 6, color = "black", geom = 'label') +
-  geom_tippoint(aes(color = Clade, shape = Type, size = Type)) +
-  geom_treescale(linesize = 1.5, color = 'black', x = max_x * 0.8) +
-  theme(
-    legend.position = 'right',
-    legend.background = element_rect(),
-    legend.key = element_blank(),
-    legend.key.size = unit(0.8, 'cm'),
-    legend.text = element_text(size = 15),
-    title = element_text(size = 15)
-  ) +
-  xlim(0, max_x * 1.8) +
-  scale_color_manual(values = color_set) +
-  scale_shape_manual(values = c(20, 17)) +
-  scale_size_manual(values = c(7, 9))
+    geom_tiplab(size = 6, color = "black", geom = 'label') +
+    geom_tippoint(aes(color = Clade, shape = Type, size = Type)) +
+    geom_treescale(linesize = 1.5, color = 'black', x = max_x * 0.8) +
+    theme(
+        legend.position = 'right',
+        legend.background = element_rect(),
+        legend.key = element_blank(),
+        legend.key.size = unit(0.8, 'cm'),
+        legend.text = element_text(size = 15),
+        title = element_text(size = 15)
+    ) +
+    xlim(0, max_x * 1.8) +
+    scale_color_manual(values = color_set) +
+    scale_shape_manual(values = c(20, 17)) +
+    scale_size_manual(values = c(7, 9))
 
 # Save plot with dynamic sizing based on strain count
 message(paste("Saving figure with", num_strains, "strains"))
 
 if (num_strains > 30) {
-  size_factor <- sqrt(num_strains / 30)
-  width <- 15 * size_factor
-  height <- 15 * size_factor
-  message(paste("Using scaled dimensions:", width, "x", height))
+    size_factor <- sqrt(num_strains / 30)
+    width <- 15 * size_factor
+    height <- 15 * size_factor
+    message(paste("Using scaled dimensions:", width, "x", height))
 } else {
-  width <- 15 * 1.2
-  height <- 15 * 1.2
-  message(paste("Using default dimensions:", width, "x", height))
+    width <- 15 * 1.2
+    height <- 15 * 1.2
+    message(paste("Using default dimensions:", width, "x", height))
 }
 
 ggsave(plot = p, filename = fig_name, width = width, height = height)
