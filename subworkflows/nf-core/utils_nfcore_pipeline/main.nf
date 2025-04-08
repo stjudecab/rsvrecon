@@ -174,7 +174,7 @@ def nfCoreLogo(monochrome_logs=true) {
 //
 def dashedLine(monochrome_logs=true) {
     def colors = logColours(monochrome_logs) as Map
-    return "-${colors.dim}-----------------------------------------------------------${colors.reset}-"
+    return "-${colors.dim}----------------------------------------------------${colors.reset}-"
 }
 
 //
