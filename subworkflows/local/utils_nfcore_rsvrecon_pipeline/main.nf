@@ -15,6 +15,7 @@ include { completionEmail           } from '../../nf-core/utils_nfcore_pipeline'
 include { completionSummary         } from '../../nf-core/utils_nfcore_pipeline'
 include { imNotification            } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NFCORE_PIPELINE     } from '../../nf-core/utils_nfcore_pipeline'
+include { logColours                } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NEXTFLOW_PIPELINE   } from '../../nf-core/utils_nextflow_pipeline'
 include { INPUT_CHECK               } from '../../local/input_check'
 
@@ -279,4 +280,11 @@ def StJudeCabLogo(monochrome_logs=true) {
         """.stripIndent()
     )
 }
+
+//
+// Return dashed line
+//
+def dashedLine(monochrome_logs=true) {
+    def colors = logColours(monochrome_logs) as Map
+    return "-${colors.dim}-----------------------------------------------------------${colors.reset}-"
 
