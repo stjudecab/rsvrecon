@@ -85,20 +85,6 @@
                     "description": "Path to directory or tar.gz archive for pre-built KMA index.",
                     "fa_icon": "fas fa-bezier-curve"
                 },
-                "rsv_gff": {
-                    "type": "string",
-                    "format": "file-path",
-                    "fa_icon": "far fa-file-code",
-                    "description": "Path to RSV GFF file.",
-                    "pattern": "^\\S+\\.gtf(\\.gz)?$"
-                },
-                "rsv_meta_file": {
-                    "type": "string",
-                    "format": "file-path",
-                    "fa_icon": "far fa-file-code",
-                    "description": "Path to RSV Meta file.",
-                    "pattern": "^\\S+\\.csv(\\.gz)?$"
-                },
                 "blast_gisaid_db": {
                     "type": "string",
                     "format": "path",
