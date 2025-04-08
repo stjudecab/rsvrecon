@@ -170,26 +170,6 @@ def nfCoreLogo(monochrome_logs=true) {
 }
 
 //
-// StJude CAB logo
-//
-def StJudeCabLogo(monochrome_logs=true) {
-    def colors = logColours(monochrome_logs) as Map
-    String.format(
-        """\n
-        ${dashedLine(monochrome_logs)}
-        ${colors.blue} ____  _           _ _   _ ____  _____    ____    _    ____  ${colors.reset}
-        ${colors.blue}/ ___|| |_        | | | | |  _ \\| ____|  / ___|  / \\  | __ ) ${colors.reset}
-        ${colors.blue}\\___ \\| __|    _  | | | | | | | |  _|   | |     / _ \\ |  _ \\ ${colors.reset}
-        ${colors.blue} ___) | |_ _  | |_| | |_| | |_| | |___  | |___ / ___ \\| |_) |${colors.reset}
-        ${colors.blue}|____/ \\__(_)  \\___/ \\___/|____/|_____|  \\____/_/   \\_\\____/ ${colors.reset}
-        
-        ${colors.purple}  ${workflow.manifest.name} ${getWorkflowVersion()}${colors.reset}
-        ${dashedLine(monochrome_logs)}
-        """.stripIndent()
-    )
-}
-
-//
 // Return dashed line
 //
 def dashedLine(monochrome_logs=true) {

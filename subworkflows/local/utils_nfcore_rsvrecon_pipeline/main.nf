@@ -14,7 +14,6 @@ include { samplesheetToList         } from 'plugin/nf-schema'
 include { completionEmail           } from '../../nf-core/utils_nfcore_pipeline'
 include { completionSummary         } from '../../nf-core/utils_nfcore_pipeline'
 include { imNotification            } from '../../nf-core/utils_nfcore_pipeline'
-include { StJudeCabLogo             } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NFCORE_PIPELINE     } from '../../nf-core/utils_nfcore_pipeline'
 include { UTILS_NEXTFLOW_PIPELINE   } from '../../nf-core/utils_nextflow_pipeline'
 include { INPUT_CHECK               } from '../../local/input_check'
@@ -259,5 +258,25 @@ def methodsDescriptionText(mqc_methods_yaml) {
     def description_html = engine.createTemplate(methods_text).make(meta)
 
     return description_html.toString()
+}
+
+//
+// StJude CAB logo
+//
+def StJudeCabLogo(monochrome_logs=true) {
+    def colors = logColours(monochrome_logs) as Map
+    String.format(
+        """\n
+        ${dashedLine(monochrome_logs)}
+        ${colors.blue} ____  _           _ _   _ ____  _____    ____    _    ____  ${colors.reset}
+        ${colors.blue}/ ___|| |_        | | | | |  _ \\| ____|  / ___|  / \\  | __ ) ${colors.reset}
+        ${colors.blue}\\___ \\| __|    _  | | | | | | | |  _|   | |     / _ \\ |  _ \\ ${colors.reset}
+        ${colors.blue} ___) | |_ _  | |_| | |_| | |_| | |___  | |___ / ___ \\| |_) |${colors.reset}
+        ${colors.blue}|____/ \\__(_)  \\___/ \\___/|____/|_____|  \\____/_/   \\_\\____/ ${colors.reset}
+
+        ${colors.purple}  ${workflow.manifest.name} ${getWorkflowVersion()}${colors.reset}
+        ${dashedLine(monochrome_logs)}
+        """.stripIndent()
+    )
 }
 
