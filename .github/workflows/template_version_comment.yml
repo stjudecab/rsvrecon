@@ -33,7 +33,7 @@ jobs:
         if: |
           contains(env.OUTPUT, 'nf-core')
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.PR_TOKEN }}
           allow-repeats: false
           message: |
             > [!WARNING]
