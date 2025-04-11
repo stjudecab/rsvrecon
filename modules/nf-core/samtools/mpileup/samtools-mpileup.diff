@@ -1,0 +1,53 @@
+Changes in module 'nf-core/samtools/mpileup'
+'modules/nf-core/samtools/mpileup/environment.yml' is unchanged
+Changes in 'samtools/mpileup/main.nf':
+--- modules/nf-core/samtools/mpileup/main.nf
++++ modules/nf-core/samtools/mpileup/main.nf
+@@ -8,12 +8,11 @@
+         'biocontainers/samtools:1.21--h50ea8bc_0' }"
+ 
+     input:
+-    tuple val(meta), path(input), path(intervals)
+-    path  fasta
++    tuple val(meta), path(input), path(fasta)
+ 
+     output:
+-    tuple val(meta), path("*.mpileup.gz"), emit: mpileup
+-    path  "versions.yml"                 , emit: versions
++    tuple val(meta), path("*.mpileup"), emit: mpileup
++    path  "versions.yml"              , emit: versions
+ 
+     when:
+     task.ext.when == null || task.ext.when
+@@ -21,15 +20,12 @@
+     script:
+     def args = task.ext.args ?: ''
+     def prefix = task.ext.prefix ?: "${meta.id}"
+-    def intervals_arg = intervals ? "-l ${intervals}" : ""
+     """
+     samtools mpileup \\
+         --fasta-ref $fasta \\
+         --output ${prefix}.mpileup \\
+         $args \\
+-        $intervals_arg \\
+         $input
+-    bgzip ${prefix}.mpileup
+ 
+     cat <<-END_VERSIONS > versions.yml
+     "${task.process}":
+@@ -40,9 +36,8 @@
+     stub:
+     def args = task.ext.args ?: ''
+     def prefix = task.ext.prefix ?: "${meta.id}"
+-    def intervals_arg = intervals ? "-l ${intervals}" : ""
+     """
+-    touch ${prefix}.mpileup.gz
++    touch ${prefix}.mpileup
+ 
+     cat <<-END_VERSIONS > versions.yml
+     "${task.process}":
+
+'modules/nf-core/samtools/mpileup/meta.yml' is unchanged
+'modules/nf-core/samtools/mpileup/tests/main.nf.test.snap' is unchanged
+'modules/nf-core/samtools/mpileup/tests/main.nf.test' is unchanged
+************************************************************

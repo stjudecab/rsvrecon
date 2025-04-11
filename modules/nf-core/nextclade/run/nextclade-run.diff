@@ -1,0 +1,20 @@
+Changes in module 'nf-core/nextclade/run'
+'modules/nf-core/nextclade/run/environment.yml' is unchanged
+'modules/nf-core/nextclade/run/meta.yml' is unchanged
+Changes in 'nextclade/run/main.nf':
+--- modules/nf-core/nextclade/run/main.nf
++++ modules/nf-core/nextclade/run/main.nf
+@@ -8,8 +8,7 @@
+         'community.wave.seqera.io/library/nextclade:3.11.0--155203da8341cfe6' }"
+ 
+     input:
+-    tuple val(meta), path(fasta)
+-    path dataset
++    tuple val(meta), path(fasta), path(dataset)
+ 
+     output:
+     tuple val(meta), path("${prefix}.csv")           , optional:true, emit: csv
+
+'modules/nf-core/nextclade/run/tests/main.nf.test.snap' is unchanged
+'modules/nf-core/nextclade/run/tests/main.nf.test' is unchanged
+************************************************************
