@@ -195,6 +195,7 @@ workflow RSVRECON {
     STAR_GENOMEGENERATE ( ch_matched_ref_fasta, [[:],[]] )
     ch_versions = ch_versions.mix(STAR_GENOMEGENERATE.out.versions.first())
 
+    ch_star_multiqc = Channel.empty()
     STAR_ALIGN (
         ch_trimmed_fastq
             .join(STAR_GENOMEGENERATE.out.index, by: [0]),
@@ -204,6 +205,7 @@ workflow RSVRECON {
         []
     )
     ch_star_bam = STAR_ALIGN.out.bam
+    ch_star_multiqc = ch_star_multiqc.mix(STAR_ALIGN.out.log_final)
     ch_versions = ch_versions.mix(STAR_ALIGN.out.versions.first())
 
     //
@@ -366,6 +368,12 @@ workflow RSVRECON {
         ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_fastqc_multiqc_postrim.collect().ifEmpty([]))
         ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_fail_reads_multiqc.collectFile(name: 'fail_mapped_reads_mqc.tsv').ifEmpty([]))
         ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_fastp_multiqc.collect().ifEmpty([]))
+
+        // post-alignment qc files
+        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_star_multiqc.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_star_sorted_stats.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_star_sorted_flagstat.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_star_sorted_idxstats.collect{it[1]}.ifEmpty([]))
 
         MULTIQC_FINALQC (
             ch_multiqc_finalqc_files.collect(),
