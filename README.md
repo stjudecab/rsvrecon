@@ -19,7 +19,7 @@
 <a href="https://cloud.seqera.io/launch?pipeline=https://github.com/stjudecab/rsvrecon"><img alt="Launch on Seqera Platform" src="https://img.shields.io/badge/Launch%20%F0%9F%9A%80-Seqera%20Platform-%234256e7?style=for-the-badge"></a>
 </p>
 
-[//]: # ([![Cite with Zenodo]&#40;http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000&#41;]&#40;https://doi.org/10.5281/zenodo.XXXXXXX&#41;)
+[//]: # "[![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000)](https://doi.org/10.5281/zenodo.XXXXXXX)"
 
 ## News and Updates
 
@@ -62,11 +62,13 @@ Briefly, the `rsvrecon` pipeline performs the following major steps:
    Map reads against RSV-specific databases ([KMA](https://github.com/genomicepidemiology/kma)).
 
 5. **Sequence Alignment**
+
    - Align reads to a reference ([STAR](https://github.com/alexdobin/STAR)).
    - Sort and index aligned sequences ([SAMtools](https://sourceforge.net/projects/samtools/files/samtools/)).
    - Alignment quality assessment ([SAMtools](https://sourceforge.net/projects/samtools/files/samtools/)).
 
 6. **Genome Assembly**
+
    - Calculate genome coverage ([IGVtools](https://github.com/igvteam/igv)).
    - Perform reference-guided genome assembly ([custom script](https://github.com/stjudecab/rsvrecon/blob/dev/bin/assemble_sequence.py)).
 
@@ -92,7 +94,7 @@ sample_1,sample_1_R1_001.fastq.gz,sample_1_R2_001.fastq.gz
 sample_2,sample_2_R1_001.fastq.gz,sample_2_R2_001.fastq.gz
 ```
 
->[!NOTE]
+> [!NOTE]
 > If a sample has multiple sequencing lanes or replicates, list each replicate in a separate row with the
 > same `sample` ID. The pipeline will automatically merge these reads before analysis. Spaces in sample IDs will be
 > automatically converted to underscores (`_`).
@@ -108,7 +110,7 @@ nextflow run stjudecab/rsvrecon \
     <args>
 ```
 
->[!WARNING]
+> [!WARNING]
 > Pipeline parameters should only be provided via CLI arguments or Nextflow's `-params-file` option. Custom
 > configuration files (`-c`) can specify system and pipeline configurations **except for parameters**.
 > For detailed guidance, consult the [configuration documentation](https://nf-co.re/docs/usage/getting_started/configuration#custom-configuration-files).

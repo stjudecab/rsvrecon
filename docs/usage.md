@@ -18,15 +18,15 @@ sample,fastq_1,fastq_2
 sample_1,sample_1_R1_001.fastq.gz,sample_1_R2_001.fastq.gz
 sample_2,sample_2_R1_001.fastq.gz,sample_2_R2_001.fastq.gz
 ```
+
 > **Note:** Spaces in sample names will automatically be converted to underscores (`_`) by the pipeline to prevent
 > potential downstream issues.
 
-
-| Column    | Description                                                                                                                                  |
-| --------- |----------------------------------------------------------------------------------------------------------------------------------------------|
+| Column    | Description                                                                                                                                    |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `sample`  | Unique identifier for each sample. If a sample has multiple sequencing libraries or runs, this ID must remain consistent across multiple rows. |
-| `fastq_1` | Full path to the gzipped FastQ file containing Illumina read 1. The filename must end with `.fastq.gz` or `.fq.gz`.                          |
-| `fastq_2` | Full path to the gzipped FastQ file containing Illumina read 2. The filename must end with `.fastq.gz` or `.fq.gz`.                          |
+| `fastq_1` | Full path to the gzipped FastQ file containing Illumina read 1. The filename must end with `.fastq.gz` or `.fq.gz`.                            |
+| `fastq_2` | Full path to the gzipped FastQ file containing Illumina read 2. The filename must end with `.fastq.gz` or `.fq.gz`.                            |
 
 > [!NOTE]
 > Multiple Sequencing Runs
@@ -79,8 +79,8 @@ nextflow run stjudecab/rsvrecon -params-file params.yaml
 For example, your `params.yaml` file might look like:
 
 ```yaml
-input: './samplesheet.csv'
-outdir: './results'
+input: "./samplesheet.csv"
+outdir: "./results"
 # Additional advanced parameters...
 ```
 
@@ -146,7 +146,6 @@ pipeline runs with the same settings without having to write out a command with 
 > If you wish to share such profile (such as upload as supplementary material for academic publications),
 > make sure to NOT include cluster specific paths to files, nor institutional specific profiles.
 
-
 The pipeline also dynamically loads configurations from [https://github.com/nf-core/configs](https://github.com/nf-core/configs)
 when it runs, making multiple config profiles for various institutional clusters available at run time.
 For more information and to check if your system is supported, please see the [nf-core/configs documentation](https://github.com/nf-core/configs#documentation).
@@ -158,24 +157,24 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 `PATH`. This is _not_ recommended, since it can lead to different results on different machines dependent on the computer environment.
 
 - `test`
-    - A profile with a complete configuration for automated testing
-    - Includes links to test data so needs no other parameters
+  - A profile with a complete configuration for automated testing
+  - Includes links to test data so needs no other parameters
 - `docker`
-    - A generic configuration profile to be used with [Docker](https://docker.com/)
+  - A generic configuration profile to be used with [Docker](https://docker.com/)
 - `singularity`
-    - A generic configuration profile to be used with [Singularity](https://sylabs.io/docs/)
+  - A generic configuration profile to be used with [Singularity](https://sylabs.io/docs/)
 - `podman`
-    - A generic configuration profile to be used with [Podman](https://podman.io/)
+  - A generic configuration profile to be used with [Podman](https://podman.io/)
 - `shifter`
-    - A generic configuration profile to be used with [Shifter](https://nersc.gitlab.io/development/shifter/how-to-use/)
+  - A generic configuration profile to be used with [Shifter](https://nersc.gitlab.io/development/shifter/how-to-use/)
 - `charliecloud`
-    - A generic configuration profile to be used with [Charliecloud](https://hpc.github.io/charliecloud/)
+  - A generic configuration profile to be used with [Charliecloud](https://hpc.github.io/charliecloud/)
 - `apptainer`
-    - A generic configuration profile to be used with [Apptainer](https://apptainer.org/)
+  - A generic configuration profile to be used with [Apptainer](https://apptainer.org/)
 - `wave`
-    - A generic configuration profile to enable [Wave](https://seqera.io/wave/) containers. Use together with one of the above (requires Nextflow ` 24.03.0-edge` or later).
+  - A generic configuration profile to enable [Wave](https://seqera.io/wave/) containers. Use together with one of the above (requires Nextflow ` 24.03.0-edge` or later).
 - `conda`
-    - A generic configuration profile to be used with [Conda](https://conda.io/docs/). Please only use Conda as a last resort i.e. when it's not possible to run the pipeline with Docker, Singularity, Podman, Shifter, Charliecloud, or Apptainer.
+  - A generic configuration profile to be used with [Conda](https://conda.io/docs/). Please only use Conda as a last resort i.e. when it's not possible to run the pipeline with Docker, Singularity, Podman, Shifter, Charliecloud, or Apptainer.
 
 ### `-resume`
 
