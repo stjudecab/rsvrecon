@@ -145,8 +145,7 @@ maintaining consistency. Suggestions and improvements are welcome through pull r
 ## Disclaimer
 
 The pipeline [logo](./assets/rsvrecon_logo.png) is initially generated through [ChatGPT](https://chatgpt.com/)'s
-`text2image` function using the pipeline introduction as the prompt. In addition, the text on the log underwent some manual
-modifications to remove some flaws and make it more clear.
+new `4o Image Generation` function using the pipeline introduction as the prompt.
 
 ## Citations
 
