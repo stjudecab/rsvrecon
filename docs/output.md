@@ -32,8 +32,8 @@ stages, summarized as follows:
 
 ## Output directory Structure
 
-```bash
-<OUTDIR>/
+```
+<OUTDIR>/<sample_id>
 ├── assembly
 ├── bam
 ├── fastq
