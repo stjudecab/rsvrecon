@@ -41,6 +41,7 @@ include { KMA_MAP           } from '../modules/local/kma_map'
 include { READ_KMA          } from '../modules/local/read_kma'
 include { IGVTOOLS_COUNT    } from '../modules/local/igvtools_count'
 include { ASSEMBLE_SEQUENCE } from '../modules/local/assemble_sequence'
+include { GENERATE_REPORT   } from '../modules/local/generate_report'
 
 //
 // SUBWORKFLOW: Consisting a mix of local and nf-core/modules
@@ -90,8 +91,9 @@ workflow RSVRECON {
 
     main:
 
-    // init version and multiqc channel
+    // init version, report and multiqc channel
     ch_versions = Channel.empty()
+    ch_report_files = Channel.empty()
     ch_multiqc_report = Channel.empty()
 
     //
@@ -314,6 +316,44 @@ workflow RSVRECON {
             )
             ch_versions = ch_versions.mix(PHY_GGENE_TREE.out.versions)
         }
+    }
+
+    if (!params.skip_report) {
+
+        ch_report_files = ch_star_sorted_bam
+            .join(ch_matched_ref_fasta , by: [0])
+            .join(ch_matched_ref_gff   , by: [0])
+            .join(ch_base_count        , by: [0])
+            .join(ch_consensus_fasta   , by: [0])
+            .join(BLAST_GISAID.out.txt , by: [0])
+            .join(NEXTCLADE_RUN.out.csv, by: [0])
+
+        if (!params.skip_genotyping && !params.skip_wholegenome_genotyping) {
+            // add the genotyping results
+            ch_report_files = ch_report_files.join(RSV_WHOLEGENOME_GENOTYPING.out.blast_out, by: [0])
+        }
+
+        if (!params.skip_genotyping && !params.skip_ggene_genotyping) {
+            ch_report_files = ch_report_files.join(RSV_GGENE_GENOTYPING.out.blast_out, by: [0])
+        }
+
+        // Group files by sample id ($meta.id)
+        ch_grouped_files = ch_report_files
+            .map { meta, file ->
+                return [meta.id, [file, file.getName()]]
+            }
+            .groupTuple()
+
+        // Stage files by creating path/file pairs for each sample
+        ch_staged_files = ch_grouped.flatMap { sample_id, file_list ->
+            file_list.collect { file, filename ->
+                ["${sample_id}/${filename}", file]
+            }
+        }.collect()
+
+        // Run the report generation module
+        GENERATE_REPORT ( ch_staged_files )
+        ch_versions = ch_versions.mix(GENERATE_REPORT.out.versions)
     }
 
     //
