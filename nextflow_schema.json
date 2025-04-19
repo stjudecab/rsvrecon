@@ -216,6 +216,11 @@
                     "type": "boolean",
                     "fa_icon": "fas fa-forward",
                     "description": "Skip G-gene Genotyping."
+                },
+                "skip_report": {
+                    "type": "boolean",
+                    "fa_icon": "fas fa-forward",
+                    "description": "Skip generating report."
                 }
             },
             "fa_icon": "fas fa-forward"
