@@ -64,6 +64,7 @@ workflow RSV_GGENE_GENOTYPING {
 
     emit:
 
+    blast_out = ch_blast_out // tuple: [ val(meta), path(txt) ]
     ggene_consensus_fasta = ch_ggene_consensus_fasta  // tuple: [ val(meta), path(extracted_fasta) ]
     versions = ch_versions
 }

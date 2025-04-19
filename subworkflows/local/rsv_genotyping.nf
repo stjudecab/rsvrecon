@@ -50,5 +50,6 @@ workflow RSV_WHOLEGENOME_GENOTYPING {
 
     emit:
 
-    versions = ch_versions
+    blast_out = ch_blast_out  // tuple: [ val(meta), path(txt) ]
+    versions  = ch_versions
 }
