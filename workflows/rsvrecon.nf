@@ -321,38 +321,34 @@ workflow RSVRECON {
     if (!params.skip_report) {
 
         ch_report_files = ch_star_sorted_bam
-            .join(ch_matched_ref_fasta , by: [0])
-            .join(ch_matched_ref_gff   , by: [0])
-            .join(ch_base_count        , by: [0])
-            .join(ch_consensus_fasta   , by: [0])
-            .join(BLAST_GISAID.out.txt , by: [0])
-            .join(NEXTCLADE_RUN.out.csv, by: [0])
+            .join(ch_matched_ref_fasta                    , by: [0])
+            .join(ch_matched_ref_gff                      , by: [0])
+            .join(ch_base_count                           , by: [0])
+            .join(ch_consensus_fasta                      , by: [0])
+            .join(BLAST_GISAID.out.txt                    , by: [0])
+            .join(NEXTCLADE_RUN.out.csv                   , by: [0])
+            .join(RSV_WHOLEGENOME_GENOTYPING.out.blast_out, by: [0])
+            .join(RSV_GGENE_GENOTYPING.out.blast_out      , by: [0])
 
-        if (!params.skip_genotyping && !params.skip_wholegenome_genotyping) {
-            // add the genotyping results
-            ch_report_files = ch_report_files.join(RSV_WHOLEGENOME_GENOTYPING.out.blast_out, by: [0])
-        }
-
-        if (!params.skip_genotyping && !params.skip_ggene_genotyping) {
-            ch_report_files = ch_report_files.join(RSV_GGENE_GENOTYPING.out.blast_out, by: [0])
-        }
-
-        // Group files by sample id ($meta.id)
-        ch_grouped_files = ch_report_files
-            .map { meta, file ->
-                return [meta.id, [file, file.getName()]]
+        // generate the manifest file
+        ch_report_files.map {
+            def sample_id = it[0].id
+            def files = it[1..-1]
+            def manifest = file("${workDir}/tmp/${sample_id}_manifest.tsv")
+            header = ['sample_id', 'bam', 'ref_fasta', 'ref_gff', 'igv_out', 'assembly', 'blast_gisaid', 'nextclade_out', "whg_blastout", "ggene_blastout"]
+            def file_paths = []
+            files.each { file ->
+                file_paths << "${file.toAbsolutePath()}"
             }
-            .groupTuple()
-
-        // Stage files by creating path/file pairs for each sample
-        ch_staged_files = ch_grouped.flatMap { sample_id, file_list ->
-            file_list.collect { file, filename ->
-                ["${sample_id}/${filename}", file]
-            }
-        }.collect()
+            manifest.text = "${header.join("\t")}\n"
+            manifest.append("${sample_id}\t${file_paths.join('\t')}\n")
+            return manifest
+        }
+        .collectFile (name: "manifest.tsv", sort: true, keepHeader: true)
+        .set { ch_manifest_file }
 
         // Run the report generation module
-        GENERATE_REPORT ( ch_staged_files )
+        GENERATE_REPORT ( ch_manifest_file )
         ch_versions = ch_versions.mix(GENERATE_REPORT.out.versions)
     }
 
