@@ -8,11 +8,11 @@ process GENERATE_REPORT {
         'quay.io/biocontainers/mulled-v2-ff46c3f421ca930fcc54e67ab61c8e1bcbddfe22:1ad3da14f705eb0cdff6b5a44fea4909307524b4-0' }"
 
     input:
-    path("*/*")
+    path("manifest/*")
 
     output:
-    path "report.html"   , emit: report_html
-    path "report.pdf"    , emit: report_pdf
+    path "report.html"   , optional: true, emit: report_html
+    path "report.pdf"    , optional: true, emit: report_pdf
     path "versions.yml"  , emit: versions
 
     script:
