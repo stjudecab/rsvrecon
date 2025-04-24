@@ -145,6 +145,7 @@ workflow RSVRECON {
         params.save_trimmed_fail,
         false
     )
+    ch_trimmed_json = FASTQ_TRIM_FASTP_FASTQC.out.trim_json
     ch_trimmed_fastq = FASTQ_TRIM_FASTP_FASTQC.out.reads
     ch_versions = ch_versions.mix(FASTQ_TRIM_FASTP_FASTQC.out.versions)
 
@@ -318,24 +319,62 @@ workflow RSVRECON {
         }
     }
 
-    if (!params.skip_report) {
+    if (!params.skip_report && !params.skip_qc && !params.skip_fastp && !params.skip_genotyping
+        && !params.skip_wholegenome_genotyping && !params.skip_ggene_genotyping)
+    {
 
-        ch_report_files = ch_star_sorted_bam
-            .join(ch_matched_ref_fasta                    , by: [0])
-            .join(ch_matched_ref_gff                      , by: [0])
-            .join(ch_base_count                           , by: [0])
-            .join(ch_consensus_fasta                      , by: [0])
-            .join(BLAST_GISAID.out.txt                    , by: [0])
-            .join(NEXTCLADE_RUN.out.csv                   , by: [0])
-            .join(RSV_WHOLEGENOME_GENOTYPING.out.blast_out, by: [0])
-            .join(RSV_GGENE_GENOTYPING.out.blast_out      , by: [0])
+        ch_report_files = ch_star_sorted_flagstat
+            .join(ch_consensus_fasta                       , by: [0])
+            .join(ch_matched_ref_fasta                     , by: [0])
+            .join(ch_matched_ref_gff                       , by: [0])
+            .join(ch_base_count                            , by: [0])
+            .join(NEXTCLADE_RUN.out.csv                    , by: [0])
+            .join(RSV_WHOLEGENOME_GENOTYPING.out.blast_out , by: [0])
+            .join(RSV_GGENE_GENOTYPING.out.blast_out       , by: [0])
+            .join(BLAST_GISAID.out.txt                     , by: [0])
+            .join(
+                PHY_WHG_TREE
+                    .out
+                    .phy_tree_plot
+                    .map { meta, png ->
+                        def new_meta = meta.clone()
+                        new_meta.remove('strain')
+                        [new_meta, png]
+                    },
+                by: [0]
+            )
+            .join(
+                PHY_GGENE_TREE
+                    .out
+                    .phy_tree_plot
+                    .map { meta, png ->
+                        def new_meta = meta.clone()
+                        new_meta.remove('strain')
+                        [new_meta, png]
+                    },
+                by: [0]
+            )
+
+        // ch_report_files.view()
+
+        ch_report_files = ch_trimmed_json
+            .join(ch_kma_map_res, by: [0])
+            .map { meta, json, res -> [meta.id, json, res] }
+            .join(
+                ch_report_files.map{
+                    def sample_id = it[0].id
+                    def files = it[1..-1]
+                    return [sample_id] + files
+                },
+                by: [0]
+            )
 
         // generate the manifest file
         ch_report_files.map {
-            def sample_id = it[0].id
+            def sample_id = it[0]
             def files = it[1..-1]
             def manifest = file("${workDir}/tmp/${sample_id}_manifest.tsv")
-            header = ['sample_id', 'bam', 'ref_fasta', 'ref_gff', 'igv_out', 'assembly', 'blast_gisaid', 'nextclade_out', "whg_blastout", "ggene_blastout"]
+            header = ['sample_id', 'qc_fastp', 'flagstat', 'kma_out', 'assembly', 'ref_fasta', 'ref_gff', 'igv_out', 'nextclade_out', 'whg_blastout', 'ggene_blastout', 'blast_gisaid', 'whg_figure', 'ggene_figure']
             def file_paths = []
             files.each { file ->
                 file_paths << "${file.toAbsolutePath()}"
