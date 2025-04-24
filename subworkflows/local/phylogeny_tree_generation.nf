@@ -80,9 +80,11 @@ workflow PHYLOGENY_TREE_GENERATION {
         .set { ch_tree_render_input }
 
     VISUALIZE_PHYLOGENETIC_TREE ( ch_tree_render_input )
+    ch_phy_tree_plot = VISUALIZE_PHYLOGENETIC_TREE.out.tree_plot
     ch_versions = ch_versions.mix(VISUALIZE_PHYLOGENETIC_TREE.out.versions.first())
 
     emit:
 
+    phy_tree_plot = ch_phy_tree_plot   // channel: [ val(meta), path(png) ]
     versions = ch_versions
 }
