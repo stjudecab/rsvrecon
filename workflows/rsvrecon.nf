@@ -389,7 +389,12 @@ workflow RSVRECON {
         .set { ch_manifest_file }
 
         // Run the report generation module
-        GENERATE_REPORT ( ch_manifest_file )
+        GENERATE_REPORT (
+            ch_manifest_file,
+            file("${projectDir}/vendor/ReferenceCandidate", type: 'dir', checkIfExists: true),
+            file("${projectDir}/vendor/TreeReference"     , type: 'dir', checkIfExists: true),
+            file("${projectDir}/vendor/F_mutation/"       , type: 'dir', checkIfExists: true)
+        )
         ch_versions = ch_versions.mix(GENERATE_REPORT.out.versions)
     }
 
