@@ -324,14 +324,16 @@ workflow RSVRECON {
     {
 
         ch_report_files = ch_star_sorted_flagstat
-            .join(ch_consensus_fasta                       , by: [0])
-            .join(ch_matched_ref_fasta                     , by: [0])
-            .join(ch_matched_ref_gff                       , by: [0])
-            .join(ch_base_count                            , by: [0])
-            .join(NEXTCLADE_RUN.out.csv                    , by: [0])
-            .join(RSV_WHOLEGENOME_GENOTYPING.out.blast_out , by: [0])
-            .join(RSV_GGENE_GENOTYPING.out.blast_out       , by: [0])
-            .join(BLAST_GISAID.out.txt                     , by: [0])
+            .join(ch_consensus_fasta                           , by: [0])
+            .join(ch_matched_ref_fasta                         , by: [0])
+            .join(ch_matched_ref_gff                           , by: [0])
+            .join(ch_base_count                                , by: [0])
+            .join(NEXTCLADE_RUN.out.csv                        , by: [0])
+            .join(RSV_WHOLEGENOME_GENOTYPING.out.whg_genotype  , by: [0])
+            .join(RSV_WHOLEGENOME_GENOTYPING.out.blast_out     , by: [0])
+            .join(RSV_GGENE_GENOTYPING.out.gg_genotype         , by: [0])
+            .join(RSV_GGENE_GENOTYPING.out.blast_out           , by: [0])
+            .join(BLAST_GISAID.out.txt                         , by: [0])
             .join(
                 PHY_WHG_TREE
                     .out
@@ -374,7 +376,7 @@ workflow RSVRECON {
             def sample_id = it[0]
             def files = it[1..-1]
             def manifest = file("${workDir}/tmp/${sample_id}_manifest.tsv")
-            header = ['sample_id', 'qc_fastp', 'flagstat', 'kma_out', 'assembly', 'ref_fasta', 'ref_gff', 'igv_out', 'nextclade_out', 'whg_blastout', 'ggene_blastout', 'blast_gisaid', 'whg_figure', 'ggene_figure']
+            header = ['sample_id', 'qc_fastp', 'kma_out', 'flagstat', 'assembly', 'ref_fasta', 'ref_gff', 'igv_out', 'nextclade_out', 'whg_genotype', 'whg_blastout', 'ggene_genotype', 'ggene_blastout', 'blast_gisaid', 'whg_figure', 'ggene_figure']
             def file_paths = []
             files.each { file ->
                 file_paths << "${file.toAbsolutePath()}"
