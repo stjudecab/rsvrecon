@@ -60,10 +60,12 @@ workflow RSV_GGENE_GENOTYPING {
     // Step 3: G-gene Genotyping
     //
     PARSE_GGENE_BLASTN ( ch_blast_out )
+    ch_gg_genotype = PARSE_GGENE_BLASTN.out.genotype
     ch_versions = ch_versions.mix(PARSE_GGENE_BLASTN.out.versions.first())
 
     emit:
 
+    gg_genotype = ch_gg_genotype
     blast_out = ch_blast_out // tuple: [ val(meta), path(txt) ]
     ggene_consensus_fasta = ch_ggene_consensus_fasta  // tuple: [ val(meta), path(extracted_fasta) ]
     versions = ch_versions

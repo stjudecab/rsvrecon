@@ -46,10 +46,12 @@ workflow RSV_WHOLEGENOME_GENOTYPING {
     // Step 2: Select appropriate
     //
     PARSE_BLASTN ( ch_blast_out, ch_genotyping_whg_blast_meta.map{ it[1] } )
+    ch_whg_genotype = PARSE_BLASTN.out.genotype
     ch_versions = ch_versions.mix(PARSE_BLASTN.out.versions.first())
 
     emit:
 
+    whg_genotype = ch_whg_genotype
     blast_out = ch_blast_out  // tuple: [ val(meta), path(txt) ]
     versions  = ch_versions
 }
