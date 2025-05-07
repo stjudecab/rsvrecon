@@ -37,11 +37,11 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 //
 // MODULE: Loaded from modules/local/
 //
-include { KMA_MAP           } from '../modules/local/kma_map'
-include { READ_KMA          } from '../modules/local/read_kma'
-include { IGVTOOLS_COUNT    } from '../modules/local/igvtools_count'
-include { ASSEMBLE_SEQUENCE } from '../modules/local/assemble_sequence'
-include { GENERATE_REPORT   } from '../modules/local/generate_report'
+include { KMA_MAP            } from '../modules/local/kma_map'
+include { READ_KMA           } from '../modules/local/read_kma'
+include { IGVTOOLS_COUNT     } from '../modules/local/igvtools_count'
+include { ASSEMBLE_SEQUENCE  } from '../modules/local/assemble_sequence'
+include { GENERATE_CSV_FASTA } from '../modules/local/generate_csv_fasta'
 
 //
 // SUBWORKFLOW: Consisting a mix of local and nf-core/modules
@@ -75,6 +75,7 @@ include { MULTIQC as MULTIQC_FINALQC   } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { getWorkflowVersion     } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_rsvrecon_pipeline'
 
 
@@ -388,12 +389,16 @@ workflow RSVRECON {
         .collectFile (name: "manifest.tsv", sort: true, keepHeader: true)
         .set { ch_manifest_file }
 
+        // get the workflow version
+        Channel.of("${getWorkflowVersion()}")
+            .collectFile(name: "version.txt", newLine: true)
+            .set { ch_workflow_version }
+
         // Run the report generation module
-        GENERATE_REPORT (
+        GENERATE_CSV_FASTA (
             ch_manifest_file,
-            file("${projectDir}/vendor/ReferenceCandidate", type: 'dir', checkIfExists: true),
-            file("${projectDir}/vendor/TreeReference"     , type: 'dir', checkIfExists: true),
-            file("${projectDir}/vendor/F_mutation/"       , type: 'dir', checkIfExists: true)
+            ch_workflow_version,
+            file("${projectDir}/vendor", type: 'dir', checkIfExists: true)
         )
         ch_versions = ch_versions.mix(GENERATE_REPORT.out.versions)
     }

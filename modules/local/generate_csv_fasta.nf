@@ -1,5 +1,5 @@
-process GENERATE_REPORT {
-    tag "GENERATE REPORT"
+process GENERATE_CSV_FASTA {
+    tag "GENERATE_CSV_FASTA"
     label 'process_low'
 
     conda "conda-forge::python=3.9.12 conda-forge::biopython=1.79 conda-forge::pandas=1.3.5"
@@ -8,10 +8,10 @@ process GENERATE_REPORT {
         'quay.io/biocontainers/mulled-v2-ff46c3f421ca930fcc54e67ab61c8e1bcbddfe22:1ad3da14f705eb0cdff6b5a44fea4909307524b4-0' }"
 
     input:
-    path("manifest/*")
-    path(ref_candidate_dir)
-    path(tree_ref_dir)
-    path(f_mutation_dir)
+    path(manifest, stageAs: "manifest/*")
+    path(version , stageAs: "manifest/*")
+    path(reference_dir)
+    val igv_cutoff
 
     output:
     path "report.html"   , optional: true, emit: report_html
@@ -20,13 +20,13 @@ process GENERATE_REPORT {
 
     script:
     """
-    # Generate a unifed report using the staged folder and manifest
-    # generate_report.py \\
-    #     --workdir ./ \\
-    #     --manifest manifest.tsv \\
-    #     --output_html report.html \\
-    #     --output_pdf report.pdf
-    python --help
+    # Generate the report fasta and csv files for generating the final report
+    generate_csv_fasta.py \\
+        --meta $manifest \\
+        --version $version \\
+        --output . \\
+        --reference $reference_dir \\
+        --coverage-threshold $igv_cutoff
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
