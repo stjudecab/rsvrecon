@@ -401,7 +401,7 @@ workflow RSVRECON {
             file("${projectDir}/vendor", type: 'dir', checkIfExists: true),
             params.igv_cutoff
         )
-        ch_versions = ch_versions.mix(GENERATE_REPORT.out.versions)
+        ch_versions = ch_versions.mix(GENERATE_CSV_FASTA.out.versions)
     }
 
     //
