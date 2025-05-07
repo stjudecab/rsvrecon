@@ -860,7 +860,7 @@ class RSVAnalysisPipeline:
         # Write to report file
         with open(report_file, 'a') as file:
             file.write(
-                f"{sample_name},{qc_str},{mapping_str},{subtype_info['subtype']},"
+                f"{sample_name},{qc_str},{mapping_str},{subtype_info['subtype'][0]},"
                 f"{subtype_info['ref_accession']},{subtype_info['ref_subtype']},"
                 f"{mutations_str},{coverage_str},{nextclade_info['whole_genome_clade']},"
                 f"{blast_info['whole_genome_clade']}\n"
