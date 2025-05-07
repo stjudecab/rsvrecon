@@ -398,7 +398,8 @@ workflow RSVRECON {
         GENERATE_CSV_FASTA (
             ch_manifest_file,
             ch_workflow_version,
-            file("${projectDir}/vendor", type: 'dir', checkIfExists: true)
+            file("${projectDir}/vendor", type: 'dir', checkIfExists: true),
+            params.igv_cutoff
         )
         ch_versions = ch_versions.mix(GENERATE_REPORT.out.versions)
     }
