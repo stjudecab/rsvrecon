@@ -107,11 +107,11 @@ class RSVAnalysisPipeline:
 
                 if results:
                     # Update subtype lists and F protein mutations
-                    if results['subtype'] == 'A':
+                    if results['subtype'].startswith('A'):
                         subtype_a_samples.append(sample_name)
                         if 'f_mutations' in results:
                             f_protein_mutations_a[sample_name] = results['f_mutations']
-                    elif results['subtype'] == 'B':
+                    elif results['subtype'].startswith('B'):
                         subtype_b_samples.append(sample_name)
                         if 'f_mutations' in results:
                             f_protein_mutations_b[sample_name] = results['f_mutations']
@@ -206,17 +206,17 @@ class RSVAnalysisPipeline:
         # Determine RSV subtype
         genotype_file = meta_df.loc[sample_name, 'whg_genotype']
         subtype_info = self._determine_subtype(genotype_file, meta_df.loc[sample_name, 'kma_out'])
+        assert subtype_info['subtype'].startswith('A') or subtype_info['subtype'].startswith('B'), \
+            f"{sample_name}'s subtype is not 'A' or 'B'."
 
         # Process genome sequence
         genome_sequence = self._extract_genome_sequence(meta_df.loc[sample_name, 'assembly'])
         if genome_sequence:
-            self._write_genome_sequences(sample_name, genome_sequence, subtype_info['subtype'], output_files)
+            self._write_genome_sequences(sample_name, genome_sequence, subtype_info['subtype'][0], output_files)
 
         # Detect F protein mutations if sample is RSV
         f_mutation_results = {}
         if subtype_info['subtype'] not in ['Not RSV', '']:
-            assert subtype_info['subtype'].startswith('A') or subtype_info['subtype'].startswith('B'), \
-                f"{sample_name}'s subtype is not 'A' or 'B'."
             # detect the F mutation per sample
             f_mutation_results = self._detect_f_mutations(
                 sample_name,
