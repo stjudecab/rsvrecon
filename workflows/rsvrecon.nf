@@ -52,8 +52,8 @@ include { BAM_SORT_STATS_SAMTOOLS    } from '../subworkflows/local/bam_sort_stat
 include { RSV_WHOLEGENOME_GENOTYPING } from '../subworkflows/local/rsv_genotyping'
 include { RSV_GGENE_GENOTYPING       } from '../subworkflows/local/rsv_ggene_genotyping'
 include {
-    PHYLOGENY_TREE_GENERATION as PHY_WHG_TREE;
-    PHYLOGENY_TREE_GENERATION as PHY_GGENE_TREE } from '../subworkflows/local/phylogeny_tree_generation'
+    RSV_TREE_GENERATION as PHY_WHG_TREE;
+    RSV_TREE_GENERATION as PHY_GGENE_TREE } from '../subworkflows/local/rsv_tree_generation'
 
 //
 // MODULE: Installed directly from nf-core/modules (possibly with some patches)
