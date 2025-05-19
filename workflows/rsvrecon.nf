@@ -54,6 +54,9 @@ include { RSV_GGENE_GENOTYPING       } from '../subworkflows/local/rsv_ggene_gen
 include {
     RSV_TREE_GENERATION as PHY_WHG_TREE;
     RSV_TREE_GENERATION as PHY_GGENE_TREE } from '../subworkflows/local/rsv_tree_generation'
+include {
+    PHYLOGENY_TREE_GENERATION as PHY_RSV_A;
+    PHYLOGENY_TREE_GENERATION as PHY_RSV_B  } from '../subworkflows/local/phylogeny_tree'
 
 //
 // MODULE: Installed directly from nf-core/modules (possibly with some patches)
@@ -402,6 +405,23 @@ workflow RSVRECON {
             params.igv_cutoff
         )
         ch_versions = ch_versions.mix(GENERATE_CSV_FASTA.out.versions)
+
+        // Generate the phylogenetic tree of RSV A&B
+        PHY_RSV_A (
+            GENERATE_CSV_FASTA.out.rsv_a.map {
+                fasta, csv ->
+                    [[:], fasta, "MG642074|A", csv, file("${projectDir}/vendor/TreeReference/color_A.csv")]
+            }
+        )
+
+        PHY_RSV_B (
+            GENERATE_CSV_FASTA.out.rsv_b.map {
+                fasta, csv ->
+                    [[:], fasta, "Ger/302/98-99|B", csv, file("${projectDir}/vendor/TreeReference/color_B.csv")]
+            }
+        )
+
+
     }
 
     //
