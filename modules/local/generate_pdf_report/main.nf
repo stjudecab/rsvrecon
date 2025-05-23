@@ -17,8 +17,8 @@ process GENERATE_PDF_REPORT {
     val igv_cutoff
 
     output:
-    path "*.pdf"      , emit: pdf
-    path "version.yml", emit: versions
+    path "*.pdf"       , emit: pdf
+    path "versions.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when
