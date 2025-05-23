@@ -12,10 +12,11 @@ Date: May 22, 2025
 """
 
 import os
+import base64
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import List, Tuple, Dict, Union
+from typing import List, Tuple, Dict, Union, Optional
 from dataclasses import dataclass
 
 import numpy as np
@@ -364,6 +365,65 @@ def find_gene_at_position(gene_positions: Dict[str, Tuple[str, int, int]],
     return 'Not in CDS'
 
 
+def image_to_base64(image_path: str) -> str:
+    """Convert image to base64 string for embedding in HTML."""
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+
+def int_to_gradient_color(value: int) -> str:
+    """Convert integer to gradient color between gray and green."""
+    if not (0 <= value <= 100):
+        raise ValueError("Input value must be between 0 and 100")
+
+    # RGB values for colors
+    gray_rgb = (211, 211, 211)  # Light Gray
+    green_rgb = (144, 238, 144)  # Light Green
+
+    # Calculate interpolation factor
+    factor = value / 100.0
+
+    # Interpolate RGB values
+    r = int(green_rgb[0] + factor * (gray_rgb[0] - green_rgb[0]))
+    g = int(green_rgb[1] + factor * (gray_rgb[1] - green_rgb[1]))
+    b = int(green_rgb[2] + factor * (gray_rgb[2] - green_rgb[2]))
+
+    return f'#{r:02x}{g:02x}{b:02x}'
+
+def array_to_html_table(array: List[List], header: List[str],
+                        color: Optional[List[List[str]]] = None,
+                        table_id: Optional[str] = None,
+                        table_class: Optional[str] = None) -> str:
+    """Convert a 2D array into an HTML table with optional styling."""
+    # Set table attributes
+    id_attr = f' id="{table_id}"' if table_id else ''
+    class_attr = f' class="{table_class}"' if table_class else ''
+    html = f'<table border="1"{id_attr}{class_attr}>\n'
+
+    # Add header row
+    html += '  <thead>\n'
+    html += '  <tr>\n'
+    for cell in header:
+        html += f'    <td>{cell}</td>\n'
+    html += '  </tr>\n'
+    html += '  </thead>\n'
+
+    # Add data rows
+    html += '  <tbody>\n'
+    for i, row in enumerate(array):
+        html += '  <tr>\n'
+        for j, cell in enumerate(row):
+            # Apply background color if provided
+            bg_color = color[i][j] if color and i < len(color) and j < len(color[i]) else ''
+            style_attr = f' style="background-color: {bg_color};"' if bg_color else ''
+            html += f'    <td{style_attr}>{cell}</td>\n'
+        html += '  </tr>\n'
+    html += '  </tbody>\n'
+    html += '</table>'
+
+    return html
+
+
 @dataclass
 class ReportConfig:
     """Configuration class for report generation parameters."""
@@ -420,7 +480,7 @@ class LineFlowable(Flowable):
         self.canv.line(0, self.height, self.width, self.height)
 
 
-class RSVReportGenerator:
+class RSVPdfReportGenerator:
     """Main class for generating RSV detection PDF reports."""
 
     def __init__(self, config: ReportConfig):
@@ -729,7 +789,8 @@ class RSVReportGenerator:
         img_heatmap.hAlign = 'LEFT'
         elements.append(img_heatmap)
 
-    def _resize_image(self, image_path: Path, max_width: int, max_height: int) -> Image:
+    @staticmethod
+    def _resize_image(image_path: Path, max_width: int, max_height: int) -> Image:
         """Resize image while maintaining aspect ratio."""
         pil_img = PILImage.open(image_path)
         original_width, original_height = pil_img.size
@@ -1111,7 +1172,8 @@ class RSVReportGenerator:
             paragraph = Paragraph(error_text, styles['BodyText'])
             elements.append(paragraph)
 
-    def _get_standard_table_style(self) -> TableStyle:
+    @staticmethod
+    def _get_standard_table_style() -> TableStyle:
         """Get standard table styling."""
         return TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
@@ -1125,7 +1187,8 @@ class RSVReportGenerator:
             ('GRID', (0, 0), (-1, -1), 1, colors.black)
         ])
 
-    def _get_snp_table_style(self) -> TableStyle:
+    @staticmethod
+    def _get_snp_table_style() -> TableStyle:
         """Get SNP table specific styling."""
         return TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
@@ -1169,6 +1232,555 @@ class RSVReportGenerator:
             raise
 
 
+class RSVHtmlReportGenerator:
+    """
+    Generates comprehensive HTML reports for RSV genomic analysis.
+
+    This class handles the creation of detailed HTML reports containing
+    sample summaries, phylogenetic analysis, quality control metrics,
+    coverage statistics, and SNP analysis.
+    """
+
+    def __init__(self, config: ReportConfig):
+        """
+        Initialize the RSV Report Generator.
+
+        Args:
+            config: ReportConfig object containing all necessary file paths and parameters
+        """
+        self.config = config
+        self.resource_path = Path(self.config.asset_folder)
+        self.version_info = self._get_version_info()
+        self.logo_path = Path(self.config.logo_file)
+
+        # Validate input files
+        self._validate_inputs()
+
+        # HTML template components
+        self.sidebar_content = []
+        self.main_content = []
+
+    @staticmethod
+    def _get_version(version_file: str) -> str:
+        """Read version from the version file."""
+        with open(version_file, "r") as file:
+            return file.readline().strip()
+
+    def _get_version_info(self) -> Dict[str, str]:
+        """Get version information from version file."""
+        try:
+            return {
+                'version': self._get_version(self.config.version_file),
+                'date': datetime.now().strftime('%Y-%m-%d')
+            }
+        except Exception as e:
+            logger.warning(f"Could not read version info: {e}")
+            return {'version': 'Unknown', 'date': 'Unknown'}
+
+    def _validate_inputs(self) -> None:
+        """
+        Validate that all required input files and directories exist.
+
+        Returns:
+            bool: True if all inputs are valid, False otherwise
+        """
+        required_files = [
+            self.config.csv_file,
+            self.config.meta_file
+        ]
+
+        required_dirs = [
+            self.config.working_folder,
+            self.config.temp_folder
+        ]
+
+        for file_path in required_files:
+            if not Path(file_path).exists():
+                raise FileNotFoundError(f"Required file not found: {file_path}")
+
+        for dir_path in required_dirs:
+            if not Path(dir_path).exists():
+                raise FileNotFoundError(f"Required directory not found: {dir_path}")
+
+    def _load_template(self) -> str:
+        """
+        Load HTML template from file.
+
+        Returns:
+            str: HTML template content
+
+        Raises:
+            FileNotFoundError: If template file is not found
+        """
+        template_file = self.resource_path / 'report_template.html'
+        try:
+            return template_file.read_text(encoding='utf-8')
+        except FileNotFoundError:
+            logger.error(f"Template file not found: {template_file}")
+            raise
+
+    def _load_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Load CSV and metadata files.
+
+        Returns:
+            Tuple containing CSV DataFrame and metadata DataFrame
+        """
+        try:
+            csv_df = pd.read_csv(self.config.csv_file, skiprows=1)
+            meta_df = pd.read_csv(self.config.meta_file, sep='\t', index_col=0)
+
+            # Normalize QC rate
+            csv_df['QC rate'] = csv_df['QC rate'] / 100
+
+            return csv_df, meta_df
+        except Exception as e:
+            logger.error(f"Error loading data files: {e}")
+            raise
+
+    def _get_status_icon(self, subtype: str, mapping_rate: int) -> str:
+        """
+        Get appropriate status icon based on sample results.
+
+        Args:
+            subtype: Sample subtype
+            mapping_rate: Mapping rate percentage
+
+        Returns:
+            str: Path to appropriate icon
+        """
+        if subtype == 'Not RSV':
+            return str(self.resource_path / 'error.png')
+        elif mapping_rate > 80:
+            return str(self.resource_path / 'correct.png')
+        else:
+            return str(self.resource_path / 'warning.png')
+
+    def _create_summary_section(self, csv_df: pd.DataFrame) -> None:
+        """
+        Create the summary section of the report.
+
+        Args:
+            csv_df: DataFrame containing CSV data
+        """
+        logger.info("Creating summary section")
+
+        # Add to sidebar
+        self.sidebar_content.append(
+            "<ul><li><h2><a onclick=\"showSection('summary_section')\">Summary</a></h2></li></ul>"
+        )
+
+        # Main content header
+        title = "Detection of RSV from clinical samples"
+
+        info_text = (
+            f"Pipeline Version: {self.version_info['version']}<br/>"
+            "Subtypes of each reference are highlighted in different colors: "
+            "<font color='red'>Subtype A</font> and <font color='blue'>Subtype B</font><br/>"
+            f"Genotype calling is based on <a href='https://nextstrain.org/rsv/a/genome' target='_blank'>"
+            f"<b>Nextstrain</b> and <b>Nextclade3</b>, Data updated {self.version_info['date']}</a><br/>"
+            "A clade label with * indicates the clade of best blast hit strain due to negative results from NextClade3<br/>"
+            "Click the sample name to jump to the detail section<br/>"
+        )
+
+        self.main_content.extend([
+            '<div id="summary_section" class="content-section">',
+            f'<h1>{title}</h1>',
+            f'<img src="data:image/png;base64,{image_to_base64(str(self.logo_path))}" alt="Logo" width="1000px">',
+            '<h2>Summary</h2>',
+            f'<p>{info_text}</p>'
+        ])
+
+        # Create summary table
+        self._create_summary_table(csv_df)
+
+        # Add coverage heatmap
+        self._add_coverage_heatmap()
+
+        # Add phylogenetic trees
+        self._add_phylogenetic_trees()
+
+        self.main_content.append('</div>')
+
+    def _create_summary_table(self, csv_df: pd.DataFrame) -> None:
+        """
+        Create the summary table with sample information.
+
+        Args:
+            csv_df: DataFrame containing CSV data
+        """
+        # Select relevant columns
+        table_df = csv_df[[
+            'Sample name', 'QC rate', 'Uniquely mapped reads(%)',
+            'Subtype', 'reference_accession', 'ref_subtype',
+            'Whole Genome Clade(NextClade)', 'Whole Genome Clade(Blast)', 'G_cov'
+        ]].copy()
+
+        data = []
+        bg_colors = []
+        color_dict = {'A': '#ffcccc', 'B': '#ccccff', 'N': '#d3d3d3'}
+
+        for _, row in table_df.iterrows():
+            sample_name = row['Sample name']
+            mapping_rate = int(row['Uniquely mapped reads(%)'])
+            subtype = row['Subtype']
+
+            # Create sample link
+            sample_link = f"<a onclick=\"showSection('{sample_name}')\">{sample_name}</a>"
+
+            # Get genotype text
+            if row['Whole Genome Clade(NextClade)'] in ['A', 'B']:
+                genotype_text = row['Whole Genome Clade(Blast)'] + '*'
+            else:
+                genotype_text = row['Whole Genome Clade(NextClade)']
+
+            # Create visual elements
+            mapping_fig_path = Path(self.config.temp_folder) / f'{sample_name}_mapping_figure.png'
+            status_icon_path = self._get_status_icon(subtype, mapping_rate)
+
+            mapping_fig = f'<img src="data:image/png;base64,{image_to_base64(str(mapping_fig_path))}" alt="mapping_fig" style="margin-top:0px;height:30px">'
+            status_icon = f'<img src="data:image/png;base64,{image_to_base64(status_icon_path)}" alt="status_icon" style="margin-top:0px;height:30px">'
+
+            # Add row data
+            row_data = [sample_link, f'{row["QC rate"]:.2%}', mapping_fig, genotype_text, status_icon]
+            data.append(row_data)
+
+            # Set background colors
+            row_colors = ['', '', '', '', '']
+            row_colors[1] = int_to_gradient_color(int(percentage_to_number(row_data[1])))
+            subtype_color = color_dict.get(genotype_text[0], '#ffffff')
+            row_colors[3] = row_colors[4] = subtype_color
+
+            bg_colors.append(row_colors)
+
+        # Create HTML table
+        columns = ['Sample name', 'Pass QC', 'Mapping rate', 'Clade', 'Sign']
+        html_table = array_to_html_table(
+            data, columns, color=bg_colors,
+            table_id='summary_table', table_class='summary_table_class'
+        )
+        self.main_content.append(html_table)
+
+    def _add_coverage_heatmap(self) -> None:
+        """Add coverage heatmap to the report."""
+        self.main_content.append('<h2>Coverage by genes</h2>')
+
+        heatmap_path = Path(self.config.temp_folder) / 'coverage_heatmap.png'
+        if heatmap_path.exists():
+            heatmap_b64 = image_to_base64(str(heatmap_path))
+            self.main_content.append(
+                f'<img src="data:image/png;base64,{heatmap_b64}" alt="coverage_heatmap" style="margin-top:0px;width:1500px">'
+            )
+
+    def _add_phylogenetic_trees(self) -> None:
+        """Add phylogenetic tree images to the report."""
+        tree_a_file = self.config.tree_a_file
+        tree_b_file = self.config.tree_b_file
+        if not tree_a_file and not tree_b_file:
+            return
+
+        if (tree_a_file and Path(tree_a_file).exists()) or (tree_b_file and Path(tree_b_file).exists()):
+            self.main_content.extend([
+                '<h2>Phylogenetic Analysis</h2>',
+                '<p>Phylogenetic trees are generated using whole genome sequences.</p>'
+            ])
+
+            if tree_a_file and Path(tree_a_file).exists():
+                self.main_content.extend([
+                    '<h3>Subtype A</h3>',
+                    f'<img src="data:image/png;base64,{image_to_base64(str(tree_a_file))}" alt="tree_A" style="margin-top:0px;width:1500px">'
+                ])
+
+            if tree_b_file and Path(tree_b_file).exists():
+                self.main_content.extend([
+                    '<h3>Subtype B</h3>',
+                    f'<img src="data:image/png;base64,{image_to_base64(str(tree_b_file))}" alt="tree_B" style="margin-top:0px;width:1500px">'
+                ])
+
+    def _create_sample_sections(self, csv_df: pd.DataFrame, meta_df: pd.DataFrame) -> None:
+        """
+        Create detailed sections for each sample.
+
+        Args:
+            csv_df: DataFrame containing CSV data
+            meta_df: DataFrame containing metadata
+        """
+        logger.info("Creating individual sample sections")
+
+        # Add sidebar header
+        self.sidebar_content.extend([
+            '<h2>Individual samples:</h2>',
+            '<ul>'
+        ])
+
+        csv_indexed = csv_df.set_index('Sample name')
+
+        for sample_name in sorted(meta_df.index):
+            self._create_single_sample_section(sample_name, csv_indexed, meta_df)
+
+        self.sidebar_content.append('</ul>')
+
+    def _create_single_sample_section(self, sample_name: str, csv_df: pd.DataFrame, meta_df: pd.DataFrame) -> None:
+        """
+        Create a detailed section for a single sample.
+
+        Args:
+            sample_name: Name of the sample
+            csv_df: DataFrame containing CSV data (indexed by sample name)
+            meta_df: DataFrame containing metadata
+        """
+        section_id = sample_name
+
+        # Add to sidebar
+        self.sidebar_content.append(f'<li><a onclick="showSection(\'{section_id}\')">{section_id}</a></li>')
+
+        # Start sample section
+        self.main_content.extend([
+            f'<div id="{section_id}" class="content-section">',
+            f'<h2>Sample: {section_id}</h2>'
+        ])
+
+        # Add genotype information
+        self._add_genotype_section(sample_name, csv_df, meta_df)
+
+        # Add QC details
+        self._add_qc_section(sample_name, csv_df)
+
+        # Add coverage summary (if not "Not RSV")
+        if csv_df.loc[sample_name, 'ref_subtype'] != "Not RSV":
+            self._add_coverage_section(sample_name, csv_df, meta_df)
+            self._add_snp_section(sample_name, csv_df, meta_df)
+
+        self.main_content.append('</div>')
+
+    def _add_genotype_section(self, sample_name: str, csv_df: pd.DataFrame, meta_df: pd.DataFrame) -> None:
+        """Add genotype calling information for a sample."""
+        self.main_content.append('<h3>Genotype calls</h3>')
+
+        # Determine genotype text
+        nextclade_result = csv_df.loc[sample_name, 'Whole Genome Clade(NextClade)']
+        if nextclade_result in ['A', 'B']:
+            genotype_text = csv_df.loc[sample_name, 'Whole Genome Clade(Blast)'] + '*'
+        else:
+            genotype_text = nextclade_result
+
+        # Handle F protein mutations
+        f_mutations = csv_df.loc[sample_name, 'F protein mutations']
+        if pd.notna(f_mutations):
+            f_mutations = str(f_mutations).replace("|", ", ").replace('(Reported)', '')
+        else:
+            f_mutations = ''
+
+        # Create genotype paragraph
+        if genotype_text == "Not RSV":
+            icon_path = self.resource_path / 'error.png'
+            genotype_para = f'<img src="data:image/png;base64,{image_to_base64(str(icon_path))}" style="margin-top:0px;width:30px"><b>{genotype_text}</b>'
+        else:
+            mapping_rate = int(csv_df.loc[sample_name, 'Uniquely mapped reads(%)'])
+            icon_name = 'correct.png' if mapping_rate > 80 else 'warning.png'
+            icon_path = self.resource_path / icon_name
+
+            genotype_para = (
+                f'<img src="data:image/png;base64,{image_to_base64(str(icon_path))}" style="margin-top:0px;width:30px">'
+                f'<b>{genotype_text}</b> (based on whole genome)<br/>'
+                f'F protein mutations: <b>{f_mutations}</b><br/><br/>'
+            )
+
+            # Add blast hit information
+            self._add_blast_hits(sample_name, meta_df)
+
+            # Add phylogenetic tree
+            self._add_sample_tree(sample_name, meta_df)
+
+        self.main_content.append(genotype_para)
+
+    def _add_blast_hits(self, sample_name: str, meta_df: pd.DataFrame) -> None:
+        """Add BLAST hit information for a sample."""
+        try:
+            # GISAID BLAST hit
+            blast_gisaid_file = meta_df.loc[sample_name, 'blast_gisaid']
+            gisaid_name, gisaid_length, gisaid_identity = get_best_blast_hit(blast_gisaid_file)
+            gisaid_name = gisaid_name.split('|')[0]
+
+            # NextStrain BLAST hit
+            blast_nextstrain_file = meta_df.loc[sample_name, 'whg_blastout']
+            nextstrain_name, nextstrain_length, nextstrain_identity = get_best_blast_hit(blast_nextstrain_file)
+
+            # Create table
+            data = [
+                ['GISAID', gisaid_name, gisaid_identity, gisaid_length],
+                ['NextStrain', nextstrain_name, nextstrain_identity, nextstrain_length]
+            ]
+
+            table_id = f"blast_table_{sample_name}"
+            html_table = array_to_html_table(
+                data, ['Database', 'Best hit', 'Identity(%)', 'Alignment Length'],
+                color=None, table_id=table_id, table_class='blast_table_class'
+            )
+            self.main_content.append(html_table)
+
+        except Exception as e:
+            logger.warning(f"Could not add BLAST hits for {sample_name}: {e}")
+
+    def _add_sample_tree(self, sample_name: str, meta_df: pd.DataFrame) -> None:
+        """Add phylogenetic tree for a sample."""
+        try:
+            tree_file = meta_df.loc[sample_name, 'whg_figure']
+            if Path(tree_file).exists():
+                self.main_content.extend([
+                    '<h3>Phylogenetic analysis: Whole genome</h3>',
+                    f'<img src="data:image/png;base64,{image_to_base64(tree_file)}" alt="{sample_name}" style="margin-top:0px;width:1200px">'
+                ])
+        except Exception as e:
+            logger.warning(f"Could not add tree for {sample_name}: {e}")
+
+    def _add_qc_section(self, sample_name: str, csv_df: pd.DataFrame) -> None:
+        """Add QC details section for a sample."""
+        self.main_content.append('<h2>QC Details</h2>')
+
+        data = [
+            [
+                'Raw data',
+                csv_df.loc[sample_name, 'before_filtering_total_reads'],
+                float_to_percentage(csv_df.loc[sample_name, 'before_filtering_q20_rate']),
+                float_to_percentage(csv_df.loc[sample_name, 'before_filtering_q30_rate'])
+            ],
+            [
+                'Filtered data',
+                csv_df.loc[sample_name, 'after_filtering_total_reads'],
+                float_to_percentage(csv_df.loc[sample_name, 'after_filtering_q20_rate']),
+                float_to_percentage(csv_df.loc[sample_name, 'after_filtering_q30_rate'])
+            ]
+        ]
+
+        table_id = f"qc_table_{sample_name}"
+        html_table = array_to_html_table(
+            data, ['Data type', 'Total reads', 'Q20 pct(%)', 'Q30 pct(%)'],
+            color=None, table_id=table_id, table_class='qc_table_class'
+        )
+        self.main_content.append(html_table)
+
+    def _add_coverage_section(self, sample_name: str, csv_df: pd.DataFrame, meta_df: pd.DataFrame) -> None:
+        """Add coverage summary section for a sample."""
+        self.main_content.append('<h2>Coverage summary</h2>')
+
+        try:
+            # Reference information
+            reference_accession = csv_df.loc[sample_name, 'reference_accession']
+            ref_text = f'Reference genome: <b><a href="https://www.ncbi.nlm.nih.gov/nuccore/{reference_accession}">{reference_accession}, click for details</a></b>'
+            self.main_content.append(f'<p>{ref_text}</p>')
+
+            # Load coverage data
+            wig_file = meta_df.loc[sample_name, 'igv_out']
+            cov_df = pd.read_csv(wig_file, skiprows=3, delimiter='\t', index_col=0)
+            coverage = cov_df.sum(axis=1)
+            max_position = max(cov_df.index)
+
+            # Coverage statistics
+            coverage_stats = [
+                ('Genome size (BP)', str(max_position)),
+                ('20x coverage (BP)',
+                 f"{count_greater_than_n(coverage, 19)} ({float_to_percentage(count_greater_than_n(coverage, 19) / max_position)})"),
+                ('50x coverage (BP)',
+                 f"{count_greater_than_n(coverage, 49)} ({float_to_percentage(count_greater_than_n(coverage, 49) / max_position)})"),
+                ('100x coverage (BP)',
+                 f"{count_greater_than_n(coverage, 99)} ({float_to_percentage(count_greater_than_n(coverage, 99) / max_position)})"),
+                ('500x coverage (BP)',
+                 f"{count_greater_than_n(coverage, 499)} ({float_to_percentage(count_greater_than_n(coverage, 499) / max_position)})"),
+                ('Average sequencing depth', str(int(coverage.sum() / len(coverage))))
+            ]
+
+            for label, value in coverage_stats:
+                self.main_content.append(f'<p><b>{label}:</b> {value}</p>')
+
+            # Coverage plot
+            self.main_content.append(
+                '<p>The coverage plot is under <b>Log scale</b>, the red and blue lines indicate coverage = 50 and 500</p>')
+            coverage_fig_path = Path(self.config.temp_folder) / f'{sample_name}_coverage_figure.png'
+            if coverage_fig_path.exists():
+                self.main_content.append(
+                    f'<img src="data:image/png;base64,{image_to_base64(str(coverage_fig_path))}" alt="{sample_name}" style="margin-top:0px;width:1500px">'
+                )
+
+        except Exception as e:
+            logger.warning(f"Could not add coverage section for {sample_name}: {e}")
+
+    def _add_snp_section(self, sample_name: str, csv_df: pd.DataFrame, meta_df: pd.DataFrame) -> None:
+        """Add SNP analysis section for a sample."""
+        self.main_content.append('<h2>SNP details</h2>')
+
+        try:
+            # SNP figure
+            snp_fig_path = Path(self.config.temp_folder) / f'{sample_name}_snp_figure.png'
+            if snp_fig_path.exists():
+                self.main_content.append(
+                    f'<img src="data:image/png;base64,{image_to_base64(str(snp_fig_path))}" alt="{sample_name}" style="margin-top:0px;width:1500px">'
+                )
+
+            # SNP table
+            wig_file = meta_df.loc[sample_name, 'igv_out']
+            gff_file = meta_df.loc[sample_name, 'ref_gff']
+            genotype = csv_df.loc[sample_name, 'Whole Genome Clade(NextClade)']
+
+            table_data = SNP_calling(
+                wig_file, 0.2, genotype, gff_file,
+                self.config.temp_folder, sample_name, self.config.igv_cutoff
+            )
+
+            if table_data:
+                header = table_data.pop(0)
+                table_id = f"snp_table_{sample_name}"
+                html_table = array_to_html_table(
+                    table_data, header, color=None,
+                    table_id=table_id, table_class='snp_table_class'
+                )
+                self.main_content.append(html_table)
+
+        except Exception as e:
+            logger.warning(f"Could not add SNP section for {sample_name}: {e}")
+
+    def generate_report(self) -> str:
+        """
+        Generate the complete HTML report.
+
+        Returns:
+            str: Path to the generated HTML report
+
+        Raises:
+            ValueError: If input validation fails
+            Exception: If report generation fails
+        """
+        logger.info("Starting HTML report generation")
+
+        try:
+            # Load data
+            csv_df, meta_df = self._load_data()
+
+            # Load HTML template
+            html_template = self._load_template()
+
+            # Create report sections
+            self._create_summary_section(csv_df)
+            self._create_sample_sections(csv_df, meta_df)
+
+            # Combine all content
+            sidebar_html = '<div class="sidebar">\n' + '\n'.join(self.sidebar_content) + '\n</div>'
+            main_html = '<div class="main-content">\n' + '\n'.join(self.main_content) + '\n</div>\n</body>\n</html>'
+
+            # Write final report
+            output_path = Path(self.config.working_folder) / "Report.html"
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(html_template)
+                f.write(sidebar_html)
+                f.write(main_html)
+
+            return str(output_path)
+
+        except Exception as e:
+            logger.error(f"Error generating HTML report: {e}")
+            raise
+
+
 def main():
     """Main entry point for the report generator."""
     import argparse
@@ -1201,11 +1813,16 @@ def main():
         igv_cutoff=args.igv_cutoff
     )
 
+    pdf_report_generator = RSVPdfReportGenerator(config)
+    html_report_generator = RSVHtmlReportGenerator(config)
+
     try:
-        # Create report generator and generate report
-        generator = RSVReportGenerator(config)
-        output_path = generator.generate_report()
-        logger.info(f"Report generated successfully: {output_path}")
+        # Create report generator and generate report (pdf and html)
+        pdf_report = pdf_report_generator.generate_report()
+        logger.info(f"PDF Report generated successfully: {pdf_report}")
+
+        html_report = html_report_generator.generate_report()
+        logger.info(f"HTML Report generated successfully: {html_report}")
 
     except Exception as e:
         logger.error(f"Report generation failed: {e}")
