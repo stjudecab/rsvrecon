@@ -2,13 +2,13 @@
 """
 RSV Report Generator
 
-This module generates comprehensive PDF reports for RSV (Respiratory Syncytial Virus)
-detection and analysis from clinical samples. It includes summary information,
-phylogenetic analysis, and detailed coverage statistics for each sample.
+This module generates comprehensive PDF and HTML reports for RSV (Respiratory Syncytial Virus)
+detection and analysis from clinical samples. It includes summary information, phylogenetic analysis,
+and detailed coverage statistics for each sample.
 
 Author: Haidong Yi (hyi@stjude.org)
         Lei Li (lei.li@stjude.org)
-Date: May 22, 2025
+Date: May 23, 2025
 """
 
 import os
