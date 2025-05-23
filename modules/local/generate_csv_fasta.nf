@@ -20,6 +20,9 @@ process GENERATE_CSV_FASTA {
         path("tree_sequences_B.csv", optional: true), emit: rsv_b
     path "versions.yml", emit: versions
 
+    when:
+    task.ext.when == null || task.ext.when
+
     script:
     """
     # Generate the report fasta and csv files for generating the final report
