@@ -411,7 +411,7 @@ workflow RSVRECON {
         PHY_RSV_A (
             GENERATE_CSV_FASTA.out.rsv_a.map {
                 fasta, csv ->
-                    [[id:RSV_A], fasta, "MG642074|A", csv, file("${projectDir}/vendor/TreeReference/color_A.csv")]
+                    [[id:'RSV_A'], fasta, "MG642074|A", csv, file("${projectDir}/vendor/TreeReference/color_A.csv")]
             }
         )
         ch_versions = ch_versions.mix(PHY_RSV_A.out.versions)
@@ -419,7 +419,7 @@ workflow RSVRECON {
         PHY_RSV_B (
             GENERATE_CSV_FASTA.out.rsv_b.map {
                 fasta, csv ->
-                    [[id:RSV_B], fasta, "Ger/302/98-99|B", csv, file("${projectDir}/vendor/TreeReference/color_B.csv")]
+                    [[id:'RSV_B'], fasta, "Ger/302/98-99|B", csv, file("${projectDir}/vendor/TreeReference/color_B.csv")]
             }
         )
         ch_versions = ch_versions.mix(PHY_RSV_B.out.versions)
