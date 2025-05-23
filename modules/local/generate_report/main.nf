@@ -1,4 +1,4 @@
-process GENERATE_PDF_REPORT {
+process GENERATE_REPORT {
     tag "GENERATE_REPORT"
     label 'process_low'
 
@@ -17,7 +17,8 @@ process GENERATE_PDF_REPORT {
     val igv_cutoff
 
     output:
-    path "*.pdf"       , emit: pdf
+    path "*.pdf"       , emit: report_pdf
+    path "*.html"      , emit: report_html
     path "versions.yml", emit: versions
 
     when:
@@ -31,8 +32,8 @@ process GENERATE_PDF_REPORT {
     # create tmp folder
     mkdir -p temp
 
-    # generate final report pdf file
-    generate_pdf_report.py \\
+    # generate final report pdf and html file
+    generate_report.py \\
         --csv $report_csv \\
         --meta $meta \\
         --output-dir . \\

@@ -42,7 +42,7 @@ include { READ_KMA           } from '../modules/local/read_kma'
 include { IGVTOOLS_COUNT     } from '../modules/local/igvtools_count'
 include { ASSEMBLE_SEQUENCE  } from '../modules/local/assemble_sequence'
 include { GENERATE_CSV_FASTA } from '../modules/local/generate_csv_fasta'
-include { GENERATE_PDF_REPORT } from '../modules/local/generate_pdf_report/main'
+include { GENERATE_REPORT    } from '../modules/local/generate_report'
 
 //
 // SUBWORKFLOW: Consisting a mix of local and nf-core/modules
@@ -425,7 +425,7 @@ workflow RSVRECON {
         ch_versions = ch_versions.mix(PHY_RSV_B.out.versions)
 
         // Generate the final report
-        GENERATE_PDF_REPORT (
+        GENERATE_REPORT (
             GENERATE_CSV_FASTA.out.report,
             file("${projectDir}/vendor", type: 'dir', checkIfExists: true),
             file("${projectDir}/assets", type: 'dir', checkIfExists: true),
@@ -436,8 +436,7 @@ workflow RSVRECON {
             PHY_RSV_B.out.phy_tree_plot.map{it[1]}.ifEmpty([]),
             params.igv_cutoff
         )
-        ch_versions = ch_versions.mix(GENERATE_PDF_REPORT.out.versions)
-
+        ch_versions = ch_versions.mix(GENERATE_REPORT.out.versions)
     }
 
     //
