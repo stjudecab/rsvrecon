@@ -42,6 +42,7 @@ include { READ_KMA           } from '../modules/local/read_kma'
 include { IGVTOOLS_COUNT     } from '../modules/local/igvtools_count'
 include { ASSEMBLE_SEQUENCE  } from '../modules/local/assemble_sequence'
 include { GENERATE_CSV_FASTA } from '../modules/local/generate_csv_fasta'
+include { GENERATE_PDF_REPORT } from '../modules/local/generate_pdf_report/main'
 
 //
 // SUBWORKFLOW: Consisting a mix of local and nf-core/modules
@@ -413,6 +414,7 @@ workflow RSVRECON {
                     [[:], fasta, "MG642074|A", csv, file("${projectDir}/vendor/TreeReference/color_A.csv")]
             }
         )
+        ch_versions = ch_versions.mix(PHY_RSV_A.out.versions)
 
         PHY_RSV_B (
             GENERATE_CSV_FASTA.out.rsv_b.map {
@@ -420,7 +422,21 @@ workflow RSVRECON {
                     [[:], fasta, "Ger/302/98-99|B", csv, file("${projectDir}/vendor/TreeReference/color_B.csv")]
             }
         )
+        ch_versions = ch_versions.mix(PHY_RSV_B.out.versions)
 
+        // Generate the final report
+        GENERATE_PDF_REPORT (
+            GENERATE_CSV_FASTA.out.report,
+            file("${projectDir}/vendor", type: 'dir', checkIfExists: true),
+            file("${projectDir}/assets", type: 'dir', checkIfExists: true),
+            ch_manifest_file,
+            file("${projectDir}/assets/report_logo.png", type: 'file', checkIfExists: true),
+            ch_workflow_version,
+            PHY_RSV_A.out.phy_tree_plot.map{it[1]}.ifEmpty([]),
+            PHY_RSV_B.out.phy_tree_plot.map{it[1]}.ifEmpty([]),
+            param.igv_cutoff
+        )
+        ch_versions = ch_versions.mix(GENERATE_PDF_REPORT.out.versions)
 
     }
 
