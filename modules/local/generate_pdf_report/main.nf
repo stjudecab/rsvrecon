@@ -18,7 +18,7 @@ process GENERATE_PDF_REPORT {
 
     output:
     path "*.pdf"      , emit: pdf
-    path "version.yml", emit: version
+    path "version.yml", emit: versions
 
     when:
     task.ext.when == null || task.ext.when

@@ -434,7 +434,7 @@ workflow RSVRECON {
             ch_workflow_version,
             PHY_RSV_A.out.phy_tree_plot.map{it[1]}.ifEmpty([]),
             PHY_RSV_B.out.phy_tree_plot.map{it[1]}.ifEmpty([]),
-            param.igv_cutoff
+            params.igv_cutoff
         )
         ch_versions = ch_versions.mix(GENERATE_PDF_REPORT.out.versions)
 
