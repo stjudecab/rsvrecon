@@ -14,6 +14,7 @@ process GENERATE_CSV_FASTA {
     val igv_cutoff
 
     output:
+    path "Report.csv", emit: report
     tuple path("tree_sequences_A.fasta", optional: true),
         path("tree_sequences_A.csv", optional: true), emit: rsv_a
     tuple path("tree_sequences_B.fasta", optional: true),
