@@ -167,7 +167,7 @@ class RSVAnalysisPipeline:
             f"Pipeline version: {self.version}",
             "Sample name,before_filtering_total_reads,before_filtering_q20_rate,before_filtering_q30_rate," +
             "after_filtering_total_reads,after_filtering_q20_rate,after_filtering_q30_rate,QC rate," +
-            "Uniquely mapped reads %,MULTI-MAPPING READS %,UNMAPPED READS%,CHIMERIC READS%," +
+            "Uniquely mapped reads(%),MULTI-MAPPING READS(%),UNMAPPED READS(%),CHIMERIC READS(%)," +
             "Subtype,reference_accession,ref_subtype," +
             "F protein mutations," +
             "NS1_cov,NS2_cov,N_cov,P_cov,M_cov,SH_cov,G_cov,F_cov,M2-1_cov,M2-2_cov,L_cov," +
