@@ -160,6 +160,13 @@
             "type": "object",
             "description": "Options to sequence alignment and assembly",
             "properties": {
+                "aligner": {
+                    "type": "string",
+                    "default": "bwa",
+                    "description": "Specifies the alignment algorithm to use - available options are 'bwa' and 'star'.",
+                    "fa_icon": "fas fa-map-signs",
+                    "enum": ["bwa", "star"]
+                },
                 "genomeSAindexNbases": {
                     "type": "integer",
                     "default": 5,
