@@ -897,31 +897,33 @@ class RSVAnalysisPipeline:
             output_files: Dictionary of output file paths
         """
         # Extract key residue positions
-        self._extract_key_residues(
-            output_files['f_protein_a'],
-            os.path.join(self.reference_dir, 'F_mutation', 'RSV_A_F_Mutation.csv'),
-            output_files['f_key_position_a']
-        )
+        if f_mutations_a:
+            self._extract_key_residues(
+                output_files['f_protein_a'],
+                os.path.join(self.reference_dir, 'F_mutation', 'RSV_A_F_Mutation.csv'),
+                output_files['f_key_position_a']
+            )
 
-        self._extract_key_residues(
-            output_files['f_protein_b'],
-            os.path.join(self.reference_dir, 'F_mutation', 'RSV_B_F_Mutation.csv'),
-            output_files['f_key_position_b']
-        )
+            # Generate F mutation report for RSV-A
+            self._write_f_mutation_report(
+                'A',
+                f_mutations_a,
+                output_files['f_report_a']
+            )
 
-        # Generate F mutation report for RSV-A
-        self._write_f_mutation_report(
-            'A',
-            f_mutations_a,
-            output_files['f_report_a']
-        )
+        if f_mutations_b:
+            self._extract_key_residues(
+                output_files['f_protein_b'],
+                os.path.join(self.reference_dir, 'F_mutation', 'RSV_B_F_Mutation.csv'),
+                output_files['f_key_position_b']
+            )
 
-        # Generate F mutation report for RSV-B
-        self._write_f_mutation_report(
-            'B',
-            f_mutations_b,
-            output_files['f_report_b']
-        )
+            # Generate F mutation report for RSV-B
+            self._write_f_mutation_report(
+                'B',
+                f_mutations_b,
+                output_files['f_report_b']
+            )
 
     def _extract_key_residues(self, fasta_file: str, mutation_file: str, output_csv: str) -> None:
         """
