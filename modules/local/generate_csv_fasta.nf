@@ -15,10 +15,10 @@ process GENERATE_CSV_FASTA {
 
     output:
     path "Report.csv", emit: report
-    tuple path("tree_sequences_A.fasta", optional: true),
-        path("tree_sequences_A.csv", optional: true), emit: rsv_a
-    tuple path("tree_sequences_B.fasta", optional: true),
-        path("tree_sequences_B.csv", optional: true), emit: rsv_b
+    tuple path("tree_sequences_A.fasta"),
+        path("tree_sequences_A.csv"), optional: true, emit: rsv_a
+    tuple path("tree_sequences_B.fasta"),
+        path("tree_sequences_B.csv"), optional: true, emit: rsv_b
     path "versions.yml", emit: versions
 
     when:
