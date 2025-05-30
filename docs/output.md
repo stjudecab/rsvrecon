@@ -17,7 +17,9 @@ stages, summarized as follows:
 - [Identify matched genome from RSV databases](#identify-matched-genome-from-rsv-database)
   - [KMA](#kma) - KMA mapping against RSV database
 - [Read Alignment](#read-alignment)
-  - [STAR](#star) - Read alignment against reference genome
+  - Aligner
+    - [BWA](#bwa) - BWA Aligner (default)
+    - [STAR](#star) - STAR Aligner
   - [Samtools](#samtools) - Sort, index and generate metrics for alignments
 - [Reference guide read assembly](#reference-guide-read-assembly)
   - [IGVTools](#igvtools) - Count the coverage across the genome.
@@ -109,7 +111,19 @@ other common attributes, based on our users demands.
 
 ## Read Alignment
 
+Adapter-trimmed reads are mapped to the reference assembly using the aligner set by the `--aligner` parameter.
+Available aligners are [BWA](https://bio-bwa.sourceforge.net/bwa.shtml)(default) and [STAR](https://github.com/alexdobin/STAR).
+
+### BWA
+
+[BWA](https://bio-bwa.sourceforge.net/bwa.shtml) is a software package for mapping DNA sequences against a large reference genome,
+such as the human genome.
+
 ### STAR
+
+[STAR](https://github.com/alexdobin/STAR) (Spliced Transcripts Alignment to a Reference) is a highly efficient sequence aligner designed for RNA-seq data.
+It aligns reads to a reference genome using a fast seed-search algorithm followed by stitching of local alignments, allowing accurate detection of splice junctions.
+STAR supports both single-end and paired-end reads and is optimized for speed and accuracy.
 
 <details markdown="1">
 <summary>Output files</summary>

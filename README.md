@@ -63,7 +63,7 @@ Briefly, the `rsvrecon` pipeline performs the following major steps:
 
 5. **Sequence Alignment**
 
-   - Align reads to a reference ([STAR](https://github.com/alexdobin/STAR)).
+   - Align reads to a reference ([BWA](https://bio-bwa.sourceforge.net/bwa.shtml)(default) or [STAR](https://github.com/alexdobin/STAR)).
    - Sort and index aligned sequences ([SAMtools](https://sourceforge.net/projects/samtools/files/samtools/)).
    - Alignment quality assessment ([SAMtools](https://sourceforge.net/projects/samtools/files/samtools/)).
 
@@ -130,12 +130,19 @@ Pipeline results are organized per sample ID within the specified output directo
 - `<OUTDIR>/<sample_id>/assembly`: Genome assemblies and coverage summaries.
 - _(and more)_
 
+In addition to sample-level results, our pipeline delivers batch-level results as well, structured as follows:
+
+- `<OUTDIR>/batch_qcs/`: Contains [MultiQC](https://seqera.io/multiqc/)-based QC reports for both raw and filtered (trimmed) data.
+- `<OUTDIR>/batch_reports/`: Include combined results across samples as clinical reports in both `PDF` and `HTML` formats.
+
 ## Credits
 
-**stjudecab/rsvrecon** was developed by Haidong Yi (@HaidYi) and Lei Li (@LeiLi-Uchicago) at the
+**stjudecab/rsvrecon** was developed by Haidong Yi ([@HaidYi](https://github.com/HaidYi)) and Lei Li ([@LeiLi-Uchicago](https://github.com/LeiLi-Uchicago)) at the
 [Center for Applied Bioinformatics (CAB)](https://www.stjude.org/research/why-st-jude/shared-resources/center-for-applied-bioinformatics-cab.html),
 [St. Jude Children's Research Hospital](https://www.stjude.org/). The pipeline design incorporates community-driven best
-practices, especially inspired by [nf-core](https://nf-co.re/). We also thank the wider CAB team for their valuable input and feedback.
+practices, especially inspired by [nf-core](https://nf-co.re/). We also thank the wider CAB team for their valuable inputs and feedbacks.
+
+![StJude_CAB](assets/report_logo.png)
 
 ## Contributions and Support
 
