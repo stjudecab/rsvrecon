@@ -115,7 +115,7 @@ nextflow run stjudecab/rsvrecon \
 > configuration files (`-c`) can specify system and pipeline configurations **except for parameters**.
 > For detailed guidance, consult the [configuration documentation](https://nf-co.re/docs/usage/getting_started/configuration#custom-configuration-files).
 
-For further information, please check the complete [usage documentation](./docs/usage) and [pipeline output descriptions](./docs/output).
+For further information, please check the complete [usage documentation](./docs/usage.md) and [pipeline output descriptions](./docs/output.md).
 
 ## Pipeline Output
 
