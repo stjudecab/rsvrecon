@@ -1,5 +1,9 @@
 # stjudecab/rsvrecon: Citations
 
+## [RSVRecon](https://www.biorxiv.org/content/10.1101/2025.06.03.657184v1)
+
+> Lei Li, Haidong Yi, Jessica N. Brazelton, Richard Webby, Randall T. Hayden, Gang Wu, Diego R. Hijano Bridging Genomics and Clinical Medicine: RSVrecon Enhances RSV Surveillance with Automated Genotyping and Clinically-important Mutation Reporting. bioRxiv 2025.06.03.657184; doi: https://doi.org/10.1101/2025.06.03.657184
+
 ## [nf-core](https://pubmed.ncbi.nlm.nih.gov/32055031/)
 
 > Ewels PA, Peltzer A, Fillinger S, Patel H, Alneberg J, Wilm A, Garcia MU, Di Tommaso P, Nahnsen S. The nf-core framework for community-curated bioinformatics pipelines. Nat Biotechnol. 2020 Mar;38(3):276-278. doi: 10.1038/s41587-020-0439-x. PubMed PMID: 32055031.
