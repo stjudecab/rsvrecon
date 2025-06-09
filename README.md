@@ -15,7 +15,7 @@
 <a href="https://www.nextflow.io/"><img alt="Nextflow" src="https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A524.04.2-23aa62.svg?style=for-the-badge"></a>
 <a href="https://www.docker.com/"><img alt="run with docker" src="https://img.shields.io/badge/run%20with-docker-0db7ed?labelColor=000000&logo=docker&style=for-the-badge"></a>
 <a href="https://sylabs.io/docs/"><img alt="run with singularity" src="https://img.shields.io/badge/run%20with-singularity-1d355c.svg?labelColor=000000&style=for-the-badge"></a>
-<a href="https://github.com/stjudecab/rsvrecon/blob/main/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/stjudecab/rsvrecon?style=for-the-badge&labelColor=363a4f&color=eba0ac"></a>
+<a href="https://github.com/stjudecab/rsvrecon/blob/main/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/stjudecab/rsvrecon?branch=main&style=for-the-badge&labelColor=363a4f&color=eba0ac"></a>
 <a href="https://cloud.seqera.io/launch?pipeline=https://github.com/stjudecab/rsvrecon"><img alt="Launch on Seqera Platform" src="https://img.shields.io/badge/Launch%20%F0%9F%9A%80-Seqera%20Platform-%234256e7?style=for-the-badge"></a>
 </p>
 
