@@ -23,6 +23,8 @@
 
 ## News and Updates
 
+- [2025-06-09] :fire: [stjudecab/rsvrecon](https://github.com/stjudecab/rsvrecon) v[0.1](https://github.com/stjudecab/rsvrecon/releases/tag/0.1) is released.
+
 ## Introduction
 
 **stjudecab/rsvrecon** is a bioinformatics workflow developed to assemble and analyze genomic sequences of Respiratory
