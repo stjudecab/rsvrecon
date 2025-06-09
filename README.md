@@ -156,13 +156,15 @@ new `4o Image Generation` function using the pipeline introduction as the prompt
 
 ## Citations
 
-@article {Li2025.rsvrecon,
-author = {Li, Lei and Yi, Haidong and Brazelton, Jessica N. and Webby, Richard and Hayden, Randall T. and Wu, Gang and Hijano, Diego R.},
-title = {Bridging Genomics and Clinical Medicine: RSVrecon Enhances RSV Surveillance with Automated Genotyping and Clinically-important Mutation Reporting},
-elocation-id = {2025.06.03.657184},
-year = {2025},
-doi = {10.1101/2025.06.03.657184},
-publisher = {Cold Spring Harbor Laboratory},
-URL = {https://www.biorxiv.org/content/early/2025/06/09/2025.06.03.657184},
-journal = {bioRxiv}
+```bibtex
+@article{Li2025.rsvrecon,
+  author = {Li, Lei and Yi, Haidong and Brazelton, Jessica N. and Webby, Richard and Hayden, Randall T. and Wu, Gang and Hijano, Diego R.},
+  title = {Bridging Genomics and Clinical Medicine: RSVrecon Enhances RSV Surveillance with Automated Genotyping and Clinically-important Mutation Reporting},
+  elocation-id = {2025.06.03.657184},
+  year = {2025},
+  doi = {10.1101/2025.06.03.657184},
+  publisher = {Cold Spring Harbor Laboratory},
+  URL = {https://www.biorxiv.org/content/early/2025/06/09/2025.06.03.657184},
+  journal = {bioRxiv}
 }
+```
