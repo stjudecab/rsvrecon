@@ -63,7 +63,7 @@ Briefly, the `rsvrecon` pipeline performs the following major steps:
 
 5. **Sequence Alignment**
 
-   - Align reads to a reference ([STAR](https://github.com/alexdobin/STAR)).
+   - Align reads to a reference ([BWA](https://bio-bwa.sourceforge.net/bwa.shtml)(default) or [STAR](https://github.com/alexdobin/STAR)).
    - Sort and index aligned sequences ([SAMtools](https://sourceforge.net/projects/samtools/files/samtools/)).
    - Alignment quality assessment ([SAMtools](https://sourceforge.net/projects/samtools/files/samtools/)).
 
@@ -115,7 +115,7 @@ nextflow run stjudecab/rsvrecon \
 > configuration files (`-c`) can specify system and pipeline configurations **except for parameters**.
 > For detailed guidance, consult the [configuration documentation](https://nf-co.re/docs/usage/getting_started/configuration#custom-configuration-files).
 
-For further information, please check the complete [usage documentation](./docs/usage) and [pipeline output descriptions](./docs/output).
+For further information, please check the complete [usage documentation](./docs/usage.md) and [pipeline output descriptions](./docs/output.md).
 
 ## Pipeline Output
 
@@ -130,12 +130,19 @@ Pipeline results are organized per sample ID within the specified output directo
 - `<OUTDIR>/<sample_id>/assembly`: Genome assemblies and coverage summaries.
 - _(and more)_
 
+In addition to sample-level results, our pipeline delivers batch-level results as well, structured as follows:
+
+- `<OUTDIR>/batch_qcs/`: Contains [MultiQC](https://seqera.io/multiqc/)-based QC reports for both raw and filtered (trimmed) data.
+- `<OUTDIR>/batch_reports/`: Include combined results across samples as clinical reports in both `PDF` and `HTML` formats.
+
 ## Credits
 
-**stjudecab/rsvrecon** was developed by Haidong Yi (@HaidYi) and Lei Li (@LeiLi-Uchicago) at the
+**stjudecab/rsvrecon** was developed by Haidong Yi ([@HaidYi](https://github.com/HaidYi)) and Lei Li ([@LeiLi-Uchicago](https://github.com/LeiLi-Uchicago)) at the
 [Center for Applied Bioinformatics (CAB)](https://www.stjude.org/research/why-st-jude/shared-resources/center-for-applied-bioinformatics-cab.html),
 [St. Jude Children's Research Hospital](https://www.stjude.org/). The pipeline design incorporates community-driven best
-practices, especially inspired by [nf-core](https://nf-co.re/). We also thank the wider CAB team for their valuable input and feedback.
+practices, especially inspired by [nf-core](https://nf-co.re/). We also thank the wider CAB team for their valuable inputs and feedbacks.
+
+![StJude_CAB](assets/report_logo.png)
 
 ## Contributions and Support
 
@@ -149,4 +156,15 @@ new `4o Image Generation` function using the pipeline introduction as the prompt
 
 ## Citations
 
-TBD
+```bibtex
+@article{Li2025.rsvrecon,
+  author = {Li, Lei and Yi, Haidong and Brazelton, Jessica N. and Webby, Richard and Hayden, Randall T. and Wu, Gang and Hijano, Diego R.},
+  title = {Bridging Genomics and Clinical Medicine: RSVrecon Enhances RSV Surveillance with Automated Genotyping and Clinically-important Mutation Reporting},
+  elocation-id = {2025.06.03.657184},
+  year = {2025},
+  doi = {10.1101/2025.06.03.657184},
+  publisher = {Cold Spring Harbor Laboratory},
+  URL = {https://www.biorxiv.org/content/early/2025/06/09/2025.06.03.657184},
+  journal = {bioRxiv}
+}
+```

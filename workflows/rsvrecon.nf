@@ -37,29 +37,33 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 //
 // MODULE: Loaded from modules/local/
 //
-include { KMA_MAP           } from '../modules/local/kma_map'
-include { READ_KMA          } from '../modules/local/read_kma'
-include { IGVTOOLS_COUNT    } from '../modules/local/igvtools_count'
-include { ASSEMBLE_SEQUENCE } from '../modules/local/assemble_sequence'
+include { KMA_MAP            } from '../modules/local/kma_map'
+include { READ_KMA           } from '../modules/local/read_kma'
+include { IGVTOOLS_COUNT     } from '../modules/local/igvtools_count'
+include { ASSEMBLE_SEQUENCE  } from '../modules/local/assemble_sequence'
+include { GENERATE_CSV_FASTA } from '../modules/local/generate_csv_fasta'
+include { GENERATE_REPORT    } from '../modules/local/generate_report'
 
 //
 // SUBWORKFLOW: Consisting a mix of local and nf-core/modules
 //
 include { FASTQ_TRIM_FASTP_FASTQC    } from '../subworkflows/local/fastq_trim_fastp_fastqc'
 include { PREPARE_REFERENCE_FILES    } from '../subworkflows/local/prepare_reference_files'
+include { FASTQ_ALIGNMENT            } from '../subworkflows/local/fastq_align'
 include { BAM_SORT_STATS_SAMTOOLS    } from '../subworkflows/local/bam_sort_stats_samtools/main'
 include { RSV_WHOLEGENOME_GENOTYPING } from '../subworkflows/local/rsv_genotyping'
 include { RSV_GGENE_GENOTYPING       } from '../subworkflows/local/rsv_ggene_genotyping'
 include {
-    PHYLOGENY_TREE_GENERATION as PHY_WHG_TREE;
-    PHYLOGENY_TREE_GENERATION as PHY_GGENE_TREE } from '../subworkflows/local/phylogeny_tree_generation'
+    RSV_TREE_GENERATION as PHY_WHG_TREE;
+    RSV_TREE_GENERATION as PHY_GGENE_TREE } from '../subworkflows/local/rsv_tree_generation'
+include {
+    PHYLOGENY_TREE_GENERATION as PHY_RSV_A;
+    PHYLOGENY_TREE_GENERATION as PHY_RSV_B  } from '../subworkflows/local/phylogeny_tree'
 
 //
 // MODULE: Installed directly from nf-core/modules (possibly with some patches)
 //
 include { CAT_FASTQ                    } from '../modules/nf-core/cat/fastq/main'
-include { STAR_GENOMEGENERATE          } from '../modules/nf-core/star/genomegenerate/main'
-include { STAR_ALIGN                   } from '../modules/nf-core/star/align/main'
 include { SAMTOOLS_MPILEUP             } from '../modules/nf-core/samtools/mpileup/main'
 include { BLAST_BLASTN as BLAST_GISAID } from '../modules/nf-core/blast/blastn/main'
 include { NEXTCLADE_DATASETGET         } from '../modules/nf-core/nextclade/datasetget/main'
@@ -74,6 +78,7 @@ include { MULTIQC as MULTIQC_FINALQC   } from '../modules/nf-core/multiqc/main'
 include { paramsSummaryMap       } from 'plugin/nf-schema'
 include { paramsSummaryMultiqc   } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pipeline'
+include { getWorkflowVersion     } from '../subworkflows/nf-core/utils_nfcore_pipeline'
 include { methodsDescriptionText } from '../subworkflows/local/utils_nfcore_rsvrecon_pipeline'
 
 
@@ -90,8 +95,9 @@ workflow RSVRECON {
 
     main:
 
-    // init version and multiqc channel
+    // init version, report and multiqc channel
     ch_versions = Channel.empty()
+    ch_report_files = Channel.empty()
     ch_multiqc_report = Channel.empty()
 
     //
@@ -143,6 +149,7 @@ workflow RSVRECON {
         params.save_trimmed_fail,
         false
     )
+    ch_trimmed_json = FASTQ_TRIM_FASTP_FASTQC.out.trim_json
     ch_trimmed_fastq = FASTQ_TRIM_FASTP_FASTQC.out.reads
     ch_versions = ch_versions.mix(FASTQ_TRIM_FASTP_FASTQC.out.versions)
 
@@ -190,48 +197,39 @@ workflow RSVRECON {
     }.set { ch_trimmed_fastq }
 
     //
-    // SUBWORKFLOW: STAR index and mapping the matched genome
+    // SUBWORKFLOW: Read alignment to matched reference genome
     //
-    STAR_GENOMEGENERATE ( ch_matched_ref_fasta, [[:],[]] )
-    ch_versions = ch_versions.mix(STAR_GENOMEGENERATE.out.versions.first())
+    ch_fastq_align_multiqc = Channel.empty()
+    FASTQ_ALIGNMENT ( ch_trimmed_fastq, ch_matched_ref_fasta )
 
-    ch_star_multiqc = Channel.empty()
-    STAR_ALIGN (
-        ch_trimmed_fastq
-            .join(STAR_GENOMEGENERATE.out.index, by: [0]),
-        [[:], []],
-        true,
-        [],
-        []
-    )
-    ch_star_bam = STAR_ALIGN.out.bam
-    ch_star_multiqc = ch_star_multiqc.mix(STAR_ALIGN.out.log_final)
-    ch_versions = ch_versions.mix(STAR_ALIGN.out.versions.first())
+    ch_bam = FASTQ_ALIGNMENT.out.bam
+    ch_versions = ch_versions.mix(FASTQ_ALIGNMENT.out.versions)
+    ch_fastq_align_multiqc = ch_fastq_align_multiqc.mix(FASTQ_ALIGNMENT.out.fastq_align_multiqc)
 
     //
     // SUBWORKFLOW: BAM_SORT_STATS_SAMTOOLS
     //
-    BAM_SORT_STATS_SAMTOOLS ( ch_star_bam, ch_matched_ref_fasta )
+    BAM_SORT_STATS_SAMTOOLS ( ch_bam, ch_matched_ref_fasta )
 
-    ch_star_sorted_bam = BAM_SORT_STATS_SAMTOOLS.out.bam
-    ch_star_sorted_bai = BAM_SORT_STATS_SAMTOOLS.out.bai
+    ch_sorted_bam = BAM_SORT_STATS_SAMTOOLS.out.bam
+    ch_sorted_bai = BAM_SORT_STATS_SAMTOOLS.out.bai
 
     // these stats go for multiqc
-    ch_star_sorted_stats    = BAM_SORT_STATS_SAMTOOLS.out.stats
-    ch_star_sorted_flagstat = BAM_SORT_STATS_SAMTOOLS.out.flagstat
-    ch_star_sorted_idxstats = BAM_SORT_STATS_SAMTOOLS.out.idxstats
+    ch_sorted_stats    = BAM_SORT_STATS_SAMTOOLS.out.stats
+    ch_sorted_flagstat = BAM_SORT_STATS_SAMTOOLS.out.flagstat
+    ch_sorted_idxstats = BAM_SORT_STATS_SAMTOOLS.out.idxstats
     ch_versions = ch_versions.mix(BAM_SORT_STATS_SAMTOOLS.out.versions)
 
     //
     // MODULE: SAMTOOLS MPILEUP
     //
-    SAMTOOLS_MPILEUP ( ch_star_sorted_bam.join(ch_matched_ref_fasta, by: [0]) )
+    SAMTOOLS_MPILEUP ( ch_sorted_bam.join(ch_matched_ref_fasta, by: [0]) )
     ch_versions = ch_versions.mix(SAMTOOLS_MPILEUP.out.versions.first())
 
     //
     // MODULE: IGV-Tools to count
     //
-    IGVTOOLS_COUNT ( ch_star_sorted_bam.join(ch_matched_ref_fasta, by: [0]) )
+    IGVTOOLS_COUNT ( ch_sorted_bam.join(ch_matched_ref_fasta, by: [0]) )
     ch_base_count = IGVTOOLS_COUNT.out.count
     ch_versions = ch_versions.mix(IGVTOOLS_COUNT.out.versions.first())
 
@@ -316,6 +314,121 @@ workflow RSVRECON {
         }
     }
 
+    if (!params.skip_report && !params.skip_qc && !params.skip_fastp && !params.skip_genotyping
+        && !params.skip_wholegenome_genotyping && !params.skip_ggene_genotyping)
+    {
+
+        ch_report_files = ch_sorted_flagstat
+            .join(ch_consensus_fasta                           , by: [0])
+            .join(ch_matched_ref_fasta                         , by: [0])
+            .join(ch_matched_ref_gff                           , by: [0])
+            .join(ch_base_count                                , by: [0])
+            .join(NEXTCLADE_RUN.out.csv                        , by: [0])
+            .join(RSV_WHOLEGENOME_GENOTYPING.out.whg_genotype  , by: [0])
+            .join(RSV_WHOLEGENOME_GENOTYPING.out.blast_out     , by: [0])
+            .join(RSV_GGENE_GENOTYPING.out.gg_genotype         , by: [0])
+            .join(RSV_GGENE_GENOTYPING.out.blast_out           , by: [0])
+            .join(BLAST_GISAID.out.txt                         , by: [0])
+            .join(
+                PHY_WHG_TREE
+                    .out
+                    .phy_tree_plot
+                    .map { meta, png ->
+                        def new_meta = meta.clone()
+                        new_meta.remove('strain')
+                        [new_meta, png]
+                    },
+                by: [0]
+            )
+            .join(
+                PHY_GGENE_TREE
+                    .out
+                    .phy_tree_plot
+                    .map { meta, png ->
+                        def new_meta = meta.clone()
+                        new_meta.remove('strain')
+                        [new_meta, png]
+                    },
+                by: [0]
+            )
+
+        // ch_report_files.view()
+
+        ch_report_files = ch_trimmed_json
+            .join(ch_kma_map_res, by: [0])
+            .map { meta, json, res -> [meta.id, json, res] }
+            .join(
+                ch_report_files.map{
+                    def sample_id = it[0].id
+                    def files = it[1..-1]
+                    return [sample_id] + files
+                },
+                by: [0]
+            )
+
+        // generate the manifest file
+        ch_report_files.map {
+            def sample_id = it[0]
+            def files = it[1..-1]
+            def manifest = file("${workDir}/tmp/${sample_id}_manifest.tsv")
+            header = ['sample_id', 'qc_fastp', 'kma_out', 'flagstat', 'assembly', 'ref_fasta', 'ref_gff', 'igv_out', 'nextclade_out', 'whg_genotype', 'whg_blastout', 'ggene_genotype', 'ggene_blastout', 'blast_gisaid', 'whg_figure', 'ggene_figure']
+            def file_paths = []
+            files.each { file ->
+                file_paths << "${file.toAbsolutePath()}"
+            }
+            manifest.text = "${header.join("\t")}\n"
+            manifest.append("${sample_id}\t${file_paths.join('\t')}\n")
+            return manifest
+        }
+        .collectFile (name: "manifest.tsv", sort: true, keepHeader: true)
+        .set { ch_manifest_file }
+
+        // get the workflow version
+        Channel.of("${getWorkflowVersion()}")
+            .collectFile(name: "version.txt", newLine: true)
+            .set { ch_workflow_version }
+
+        // Run the report generation module
+        GENERATE_CSV_FASTA (
+            ch_manifest_file,
+            ch_workflow_version,
+            file("${projectDir}/vendor", type: 'dir', checkIfExists: true),
+            params.igv_cutoff
+        )
+        ch_versions = ch_versions.mix(GENERATE_CSV_FASTA.out.versions)
+
+        // Generate the phylogenetic tree of RSV A&B
+        PHY_RSV_A (
+            GENERATE_CSV_FASTA.out.rsv_a.map {
+                fasta, csv ->
+                    [[id:'RSV_A'], fasta, "MG642074|A", csv, file("${projectDir}/vendor/TreeReference/color_A.csv")]
+            }
+        )
+        ch_versions = ch_versions.mix(PHY_RSV_A.out.versions)
+
+        PHY_RSV_B (
+            GENERATE_CSV_FASTA.out.rsv_b.map {
+                fasta, csv ->
+                    [[id:'RSV_B'], fasta, "Ger/302/98-99|B", csv, file("${projectDir}/vendor/TreeReference/color_B.csv")]
+            }
+        )
+        ch_versions = ch_versions.mix(PHY_RSV_B.out.versions)
+
+        // Generate the final report
+        GENERATE_REPORT (
+            GENERATE_CSV_FASTA.out.report,
+            file("${projectDir}/vendor", type: 'dir', checkIfExists: true),
+            file("${projectDir}/assets", type: 'dir', checkIfExists: true),
+            ch_manifest_file,
+            file("${projectDir}/assets/report_logo.png", type: 'file', checkIfExists: true),
+            ch_workflow_version,
+            PHY_RSV_A.out.phy_tree_plot.map{it[1]}.ifEmpty([]),
+            PHY_RSV_B.out.phy_tree_plot.map{it[1]}.ifEmpty([]),
+            params.igv_cutoff
+        )
+        ch_versions = ch_versions.mix(GENERATE_REPORT.out.versions)
+    }
+
     //
     // Collate and save software versions
     //
@@ -370,10 +483,10 @@ workflow RSVRECON {
         ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_fastp_multiqc.collect().ifEmpty([]))
 
         // post-alignment qc files
-        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_star_multiqc.collect{it[1]}.ifEmpty([]))
-        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_star_sorted_stats.collect{it[1]}.ifEmpty([]))
-        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_star_sorted_flagstat.collect{it[1]}.ifEmpty([]))
-        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_star_sorted_idxstats.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_fastq_align_multiqc.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_sorted_stats.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_sorted_flagstat.collect{it[1]}.ifEmpty([]))
+        ch_multiqc_finalqc_files = ch_multiqc_finalqc_files.mix(ch_sorted_idxstats.collect{it[1]}.ifEmpty([]))
 
         MULTIQC_FINALQC (
             ch_multiqc_finalqc_files.collect(),

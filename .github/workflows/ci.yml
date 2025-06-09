@@ -29,6 +29,7 @@ jobs:
         NXF_VER:
           - "24.04.2"
           - "24.10.5"
+          - "25.04.2"
         profile:
           - "docker"
           - "singularity"
