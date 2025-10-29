@@ -171,7 +171,8 @@ class RSVAnalysisPipeline:
             "Subtype,reference_accession,ref_subtype," +
             "F protein mutations," +
             "NS1_cov,NS2_cov,N_cov,P_cov,M_cov,SH_cov,G_cov,F_cov,M2-1_cov,M2-2_cov,L_cov," +
-            "Whole Genome Clade(NextClade),Whole Genome Clade(Blast)"
+            "Whole Genome Clade(NextClade),Whole Genome Clade(Blast)" +
+            "Overall_Quality,QC_Reason"
         ]
 
         return "\n".join(header) + "\n"
@@ -857,13 +858,24 @@ class RSVAnalysisPipeline:
         coverage_values = [gene_coverage.get(gene, 0) for gene in gene_ids]
         coverage_str = ','.join(f"{value:.2f}" for value in coverage_values)
 
+        # Apply QC rules
+        qc_quality, qc_reason = self._apply_qc_rules(
+            subtype=subtype_info['subtype'],
+            whole_genome_clade=nextclade_info['whole_genome_clade'],
+            after_filtering_total_reads=qc_info['after_total'],
+            uniquely_mapped_pct=mapping_stats['uniquely_mapped'],
+            unmapped_pct=mapping_stats['unmapped'],
+            chimeric_pct=mapping_stats['chimeric'],
+            gene_coverage_values=coverage_values
+        )
+
         # Write to report file
         with open(report_file, 'a') as file:
             file.write(
                 f"{sample_name},{qc_str},{mapping_str},{subtype_info['subtype'][0]},"
                 f"{subtype_info['ref_accession']},{subtype_info['ref_subtype']},"
                 f"{mutations_str},{coverage_str},{nextclade_info['whole_genome_clade']},"
-                f"{blast_info['whole_genome_clade']}\n"
+                f"{blast_info['whole_genome_clade']},{qc_quality},{qc_reason}\n"
             )
 
     @staticmethod
@@ -882,8 +894,103 @@ class RSVAnalysisPipeline:
         with open(report_file, 'a') as file:
             file.write(
                 f"{sample_name},{qc_str},0,0,100,0,Not RSV,NA,Not RSV,,"
-                f"0,0,0,0,0,0,0,0,0,0,0,Not RSV,Not RSV\n"
+                f"0,0,0,0,0,0,0,0,0,0,0,Not RSV,Not RSV,Not available,Missing subtype or clade assignment\n"
             )
+
+    @staticmethod
+    def _apply_qc_rules(subtype: str,
+                        whole_genome_clade: str,
+                        after_filtering_total_reads: int,
+                        uniquely_mapped_pct: float,
+                        unmapped_pct: float,
+                        chimeric_pct: float,
+                        gene_coverage_values: List[float],
+                        uniq_map_cutoff: float = 70,
+                        unmapped_cutoff: float = 25,
+                        chimeric_cutoff: float = 10,
+                        genes_ge30_required: int = 9,
+                        min_reads: int = 5000,
+                        uniq_map_low: float = 20,
+                        min_genes_ge10: int = 2,
+                        f_cutoff: float = 50,
+                        g_cutoff: float = 50,
+                        l_cutoff: float = 30) -> Tuple[str, str]:
+        """
+        Apply QC rules for RSV assembly.
+
+        Args:
+            subtype: RSV subtype
+            whole_genome_clade: Whole genome clade from NextClade
+            after_filtering_total_reads: Number of reads after filtering
+            uniquely_mapped_pct: Percentage of uniquely mapped reads
+            unmapped_pct: Percentage of unmapped reads
+            chimeric_pct: Percentage of chimeric reads
+            gene_coverage_values: List of coverage values for 11 genes (NS1, NS2, N, P, M, SH, G, F, M2-1, M2-2, L)
+            uniq_map_cutoff: Minimum uniquely mapped reads percentage
+            unmapped_cutoff: Maximum unmapped reads percentage
+            chimeric_cutoff: Maximum chimeric reads percentage
+            genes_ge30_required: Minimum number of genes with >=30x coverage
+            min_reads: Minimum number of reads after filtering
+            uniq_map_low: Lower threshold for uniquely mapped reads
+            min_genes_ge10: Minimum number of genes with >=10x coverage
+            f_cutoff: Minimum F gene coverage
+            g_cutoff: Minimum G gene coverage
+            l_cutoff: Minimum L gene coverage
+
+        Returns:
+            Tuple of (Overall_Quality, QC_Reason)
+        """
+        # Missing subtype or clade → Not available
+        if not subtype or subtype.strip() == "" or not whole_genome_clade or whole_genome_clade.strip() == "":
+            return "Not available", "Missing subtype or clade assignment"
+
+        # Extract specific gene coverages (F=index 7, G=index 6, L=index 10)
+        f_cov = gene_coverage_values[7] if len(gene_coverage_values) > 7 else 0
+        g_cov = gene_coverage_values[6] if len(gene_coverage_values) > 6 else 0
+        l_cov = gene_coverage_values[10] if len(gene_coverage_values) > 10 else 0
+
+        # Coverage counts
+        genes_ge_30 = sum(cov >= 30 for cov in gene_coverage_values)
+        genes_ge_10 = sum(cov >= 10 for cov in gene_coverage_values)
+
+        # Mapping QC
+        uniq_ok = uniquely_mapped_pct >= uniq_map_cutoff
+        unmapped_ok = unmapped_pct <= unmapped_cutoff
+        chimeric_ok = chimeric_pct <= chimeric_cutoff
+
+        # Key gene coverage
+        f_ok = f_cov >= f_cutoff
+        g_ok = g_cov >= g_cutoff
+        l_ok = l_cov >= l_cutoff
+
+        # Good
+        if uniq_ok and unmapped_ok and chimeric_ok and genes_ge_30 >= genes_ge30_required and f_ok and g_ok and l_ok:
+            return ("Good",
+                    f">={uniq_map_cutoff}% uniquely mapped, <={unmapped_cutoff}% unmapped, <={chimeric_cutoff}% chimeric; "
+                    f">={genes_ge30_required}/11 genes >=30x incl. F>={f_cutoff}x, G>={g_cutoff}x, L>={l_cutoff}x")
+
+        # Not available
+        if after_filtering_total_reads < min_reads or uniquely_mapped_pct < uniq_map_low or genes_ge_10 <= min_genes_ge10:
+            return "Insufficient Data", "Insufficient usable data (low reads/mapping or gene coverage)"
+
+        # Poor (list reasons)
+        reasons = []
+        if not uniq_ok:
+            reasons.append(f"Uniquely mapped <{uniq_map_cutoff}%")
+        if not unmapped_ok:
+            reasons.append(f"Unmapped >{unmapped_cutoff}%")
+        if not chimeric_ok:
+            reasons.append(f"Chimeric >{chimeric_cutoff}%")
+        if genes_ge_30 < genes_ge30_required:
+            reasons.append(f"{11 - genes_ge_30} genes <30x")
+        if not f_ok:
+            reasons.append(f"F <{f_cutoff}x")
+        if not g_ok:
+            reasons.append(f"G <{g_cutoff}x")
+        if not l_ok:
+            reasons.append(f"L <{l_cutoff}x")
+
+        return "Needs Attention", "; ".join(reasons)
 
     def _generate_f_mutation_reports(self, f_mutations_a: Dict[str, List[str]],
                                      f_mutations_b: Dict[str, List[str]],
