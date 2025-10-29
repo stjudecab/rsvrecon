@@ -171,7 +171,7 @@ class RSVAnalysisPipeline:
             "Subtype,reference_accession,ref_subtype," +
             "F protein mutations," +
             "NS1_cov,NS2_cov,N_cov,P_cov,M_cov,SH_cov,G_cov,F_cov,M2-1_cov,M2-2_cov,L_cov," +
-            "Whole Genome Clade(NextClade),Whole Genome Clade(Blast)" +
+            "Whole Genome Clade(NextClade),Whole Genome Clade(Blast)," +
             "Overall_Quality,QC_Reason"
         ]
 
@@ -966,8 +966,8 @@ class RSVAnalysisPipeline:
         # Good
         if uniq_ok and unmapped_ok and chimeric_ok and genes_ge_30 >= genes_ge30_required and f_ok and g_ok and l_ok:
             return ("Good",
-                    f">={uniq_map_cutoff}% uniquely mapped, <={unmapped_cutoff}% unmapped, <={chimeric_cutoff}% chimeric; "
-                    f">={genes_ge30_required}/11 genes >=30x incl. F>={f_cutoff}x, G>={g_cutoff}x, L>={l_cutoff}x")
+                    f">={uniq_map_cutoff}% uniquely mapped <={unmapped_cutoff}% unmapped <={chimeric_cutoff}% chimeric; "
+                    f">={genes_ge30_required}/11 genes >=30x incl. F>={f_cutoff}x G>={g_cutoff}x L>={l_cutoff}x")
 
         # Not available
         if after_filtering_total_reads < min_reads or uniquely_mapped_pct < uniq_map_low or genes_ge_10 <= min_genes_ge10:
