@@ -599,8 +599,10 @@ class RSVPdfReportGenerator:
         elements.append(subtitle)
 
         # Information text
+        today_str = datetime.now().strftime("%Y-%m-%d")
+
         info_text = (
-            f"Pipeline Version: {self.version_info['version']}<br/>"
+            f"Pipeline Version: {self.version_info['version']}, Reported on: {today_str}<br/>"
             "Subtypes of each reference are highlighted in different colors: "
             "<font color='red'>Subtype A</font> and <font color='blue'>Subtype B</font><br/>"
             f"Genotype calling is based on "
@@ -624,7 +626,7 @@ class RSVPdfReportGenerator:
         subset_df = self.csv_df[[
             'Sample name', 'QC rate', 'Uniquely mapped reads(%)', 'Subtype',
             'reference_accession', 'ref_subtype', 'Whole Genome Clade(NextClade)',
-            'Whole Genome Clade(Blast)', 'G_cov'
+            'Whole Genome Clade(Blast)', 'G_cov', 'Overall_Quality'
         ]].copy()
 
         data = []
@@ -665,7 +667,7 @@ class RSVPdfReportGenerator:
         )
 
         # Create status icon
-        status_icon = self._get_status_icon(subtype, mapping_rate)
+        status_icon = self._get_status_icon(row['Overall_Quality'])
 
         # Create clickable sample name link
         sample_link = Paragraph(
@@ -723,14 +725,14 @@ class RSVPdfReportGenerator:
 
         return Image(str(png_file), width=4 * inch, height=0.2 * inch)
 
-    def _get_status_icon(self, subtype: str, mapping_rate: float) -> Image:
+    def _get_status_icon(self, qc: str) -> Image:
         """Get appropriate status icon based on subtype and mapping rate."""
-        if subtype == 'Not RSV':
-            icon_name = 'error.png'
-        elif mapping_rate > 80:
+        if qc == 'Good':
             icon_name = 'correct.png'
-        else:
+        elif qc == 'Needs Attention':
             icon_name = 'warning.png'
+        else:
+            icon_name = 'error.png'
 
         icon_path = self.resource_path / icon_name
         return Image(str(icon_path), width=0.2 * inch, height=0.2 * inch)
@@ -907,21 +909,26 @@ class RSVPdfReportGenerator:
 
         # Create genotype paragraph with appropriate icon
         icon_size = '20'
-        if genotype_text == "Not RSV":
+        qc_overall = csv_df.loc[sample, 'Overall_Quality']
+        qc_reason = csv_df.loc[sample, 'QC_Reason']
+
+        if qc_overall == 'Good':
+            icon_path = self.resource_path / 'correct.png'
+            genotype_para = (f'<img src="{icon_path}" valign="middle" '
+                             f'width="{icon_size}" height="{icon_size}"/>  '
+                             f'<b>{genotype_text}</b>')
+        elif qc_overall == 'Needs Attention':
+            icon_path = self.resource_path / 'warning.png'
+            genotype_para = (f'<img src="{icon_path}" valign="middle" '
+                             f'width="{icon_size}" height="{icon_size}"/>  '
+                             f'<b>{genotype_text}</b>')
+        else:
             icon_path = self.resource_path / 'error.png'
             genotype_para = (f'<img src="{icon_path}" valign="middle" '
                              f'width="{icon_size}" height="{icon_size}"/>  {genotype_text}')
-        else:
-            mapping_rate = int(csv_df.loc[sample, 'Uniquely mapped reads(%)'])
-            if mapping_rate > 80:
-                icon_path = self.resource_path / 'correct.png'
-            else:
-                icon_path = self.resource_path / 'warning.png'
 
-            genotype_para = (f'<img src="{icon_path}" valign="middle" '
-                             f'width="{icon_size}" height="{icon_size}"/>  '
-                             f'<b>{genotype_text}</b> (based on whole genome)<br/>'
-                             f'F protein mutations: <b>{f_mutations}</b><br/><br/>')
+        genotype_para += f"<br/><br/>Mapping QC details:  {qc_reason}"
+        genotype_para += f"<br/><br/>F protein mutations:  <b>{f_mutations}</b><br/><br/>"
 
         paragraph = Paragraph(genotype_para)
         elements.append(Spacer(1, 4))
@@ -1338,23 +1345,22 @@ class RSVHtmlReportGenerator:
             logger.error(f"Error loading data files: {e}")
             raise
 
-    def _get_status_icon(self, subtype: str, mapping_rate: int) -> str:
+    def _get_status_icon(self, qc: str) -> str:
         """
         Get appropriate status icon based on sample results.
 
         Args:
-            subtype: Sample subtype
-            mapping_rate: Mapping rate percentage
+            qc: Sample qc type
 
         Returns:
             str: Path to appropriate icon
         """
-        if subtype == 'Not RSV':
-            return str(self.resource_path / 'error.png')
-        elif mapping_rate > 80:
-            return str(self.resource_path / 'correct.png')
+        if qc == 'Good':
+            return str(self.resource_path / 'correct.png' )
+        elif qc == 'Needs Attention':
+            return str(self.resource_path / 'warning.png' )
         else:
-            return str(self.resource_path / 'warning.png')
+            return str(self.resource_path / 'error.png')
 
     def _create_summary_section(self, csv_df: pd.DataFrame) -> None:
         """
@@ -1372,9 +1378,10 @@ class RSVHtmlReportGenerator:
 
         # Main content header
         title = "Detection of RSV from clinical samples"
+        today_str = datetime.now().strftime("%Y-%m-%d")
 
         info_text = (
-            f"Pipeline Version: {self.version_info['version']}<br/>"
+            f"Pipeline Version: {self.version_info['version']}, Reported on: {today_str}<br/>"
             "Subtypes of each reference are highlighted in different colors: "
             "<font color='red'>Subtype A</font> and <font color='blue'>Subtype B</font><br/>"
             f"Genotype calling is based on <a href='https://nextstrain.org/rsv/a/genome' target='_blank'>"
@@ -1413,7 +1420,7 @@ class RSVHtmlReportGenerator:
         table_df = csv_df[[
             'Sample name', 'QC rate', 'Uniquely mapped reads(%)',
             'Subtype', 'reference_accession', 'ref_subtype',
-            'Whole Genome Clade(NextClade)', 'Whole Genome Clade(Blast)', 'G_cov'
+            'Whole Genome Clade(NextClade)', 'Whole Genome Clade(Blast)', 'G_cov', 'Overall_Quality'
         ]].copy()
 
         data = []
@@ -1436,7 +1443,7 @@ class RSVHtmlReportGenerator:
 
             # Create visual elements
             mapping_fig_path = Path(self.config.temp_folder) / f'{sample_name}_mapping_figure.png'
-            status_icon_path = self._get_status_icon(subtype, mapping_rate)
+            status_icon_path = self._get_status_icon(row['Overall_Quality'])
 
             mapping_fig = f'<img src="data:image/png;base64,{image_to_base64(str(mapping_fig_path))}" alt="mapping_fig" style="margin-top:0px;height:30px">'
             status_icon = f'<img src="data:image/png;base64,{image_to_base64(status_icon_path)}" alt="status_icon" style="margin-top:0px;height:30px">'
@@ -1572,20 +1579,21 @@ class RSVHtmlReportGenerator:
             f_mutations = ''
 
         # Create genotype paragraph
-        if genotype_text == "Not RSV":
-            icon_path = self.resource_path / 'error.png'
-            genotype_para = f'<img src="data:image/png;base64,{image_to_base64(str(icon_path))}" style="margin-top:0px;width:30px"><b>{genotype_text}</b>'
+        qc_overall = csv_df.loc[sample_name, 'Overall_Quality']
+        qc_reason = csv_df.loc[sample_name, 'QC_Reason']
+
+        if qc_overall == 'Good':
+            icon_path = self.resource_path / 'correct.png'
+        elif qc_overall == 'Needs Attention':
+            icon_path = self.resource_path / 'warning.png'
         else:
-            mapping_rate = int(csv_df.loc[sample_name, 'Uniquely mapped reads(%)'])
-            icon_name = 'correct.png' if mapping_rate > 80 else 'warning.png'
-            icon_path = self.resource_path / icon_name
+            icon_path = self.resource_path / 'error.png'
 
-            genotype_para = (
-                f'<img src="data:image/png;base64,{image_to_base64(str(icon_path))}" style="margin-top:0px;width:30px">'
-                f'<b>{genotype_text}</b> (based on whole genome)<br/>'
-                f'F protein mutations: <b>{f_mutations}</b><br/><br/>'
-            )
+        genotype_para = f'<img src="data:image/png;base64,{image_to_base64(str(icon_path))}" style="margin-top:0px;width:30px"><b>{genotype_text}</b>'
+        genotype_para += f"<br/><br/>Mapping QC details:  {qc_reason}"
+        genotype_para += f"<br/><br/>F protein mutations:  <b>{f_mutations}</b><br/><br/>"
 
+        if genotype_text != 'Not RSV':
             # Add blast hit information
             self._add_blast_hits(sample_name, meta_df)
 
